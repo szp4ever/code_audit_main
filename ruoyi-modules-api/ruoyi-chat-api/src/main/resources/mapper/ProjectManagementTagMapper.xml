@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.ProjectManagementTagMapper">
+
+    <resultMap id="ProjectManagementTagResult" type="org.ruoyi.chat.domain.ProjectManagementTag">
+        <id property="id" column="id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="tagName" column="tag_name"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectProjectManagementTagVo">
+        select id, project_id, tag_name, create_time
+        from project_management_tag
+    </sql>
+
+    <select id="selectTagsByProjectId" parameterType="Long" resultType="String">
+        select tag_name
+        from project_management_tag
+        where project_id = #{projectId}
+        order by create_time asc
+    </select>
+
+    <insert id="batchInsertTags">
+        insert into project_management_tag(project_id, tag_name, create_time)
+        values
+        <foreach collection="tags" item="tag" separator=",">
+            (#{tag.projectId}, #{tag.tagName}, #{tag.createTime})
+        </foreach>
+    </insert>
+
+    <delete id="deleteTagsByProjectId" parameterType="Long">
+        delete from project_management_tag where project_id = #{projectId}
+    </delete>
+
+</mapper>
+

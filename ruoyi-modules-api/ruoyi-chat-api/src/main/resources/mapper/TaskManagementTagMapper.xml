@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.TaskManagementTagMapper">
+
+    <resultMap id="TaskManagementTagResult" type="org.ruoyi.chat.domain.TaskManagementTag">
+        <id property="id" column="id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="tagName" column="tag_name"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectTaskManagementTagVo">
+        select id, task_id, tag_name, create_time
+        from task_management_tag
+    </sql>
+
+    <select id="selectTagsByTaskId" parameterType="Long" resultType="String">
+        select tag_name
+        from task_management_tag
+        where task_id = #{taskId}
+        order by create_time asc
+    </select>
+
+    <insert id="batchInsertTags">
+        insert into task_management_tag(task_id, tag_name, create_time)
+        values
+        <foreach collection="tags" item="tag" separator=",">
+            (#{tag.taskId}, #{tag.tagName}, #{tag.createTime})
+        </foreach>
+    </insert>
+
+    <delete id="deleteTagsByTaskId" parameterType="Long">
+        delete from task_management_tag where task_id = #{taskId}
+    </delete>
+
+</mapper>
+
+
+
+
+
+
+

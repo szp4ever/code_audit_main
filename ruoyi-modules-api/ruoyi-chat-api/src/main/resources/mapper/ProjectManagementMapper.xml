@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.ProjectManagementMapper">
+
+    <resultMap id="ProjectManagementResult" type="org.ruoyi.chat.domain.ProjectManagement" autoMapping="false">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="createById" column="create_by_id"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createDept" column="create_dept"/>
+        <result property="createByName" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectProjectManagementVo">
+        select id, name, description, status, create_by_id, remark,
+               create_dept, create_by, create_time, update_by, update_time,
+               del_flag, tenant_id
+        from project_management
+    </sql>
+
+    <select id="selectProjectManagementById" parameterType="Long" resultMap="ProjectManagementResult">
+        <include refid="selectProjectManagementVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <select id="selectProjectManagementList" parameterType="org.ruoyi.chat.domain.ProjectManagement"
+            resultMap="ProjectManagementResult">
+        <include refid="selectProjectManagementVo"/>
+        <where>
+            del_flag = '0'
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+            <if test="createById != null">
+                and create_by_id = #{createById}
+            </if>
+        </where>
+        order by create_time desc
+        LIMIT 1000
+    </select>
+
+    <insert id="insertProjectManagement" parameterType="org.ruoyi.chat.domain.ProjectManagement" useGeneratedKeys="true" keyProperty="id">
+        insert into project_management
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="description != null">description,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="createById != null">create_by_id,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createDept != null">create_dept,</if>
+            <choose>
+                <when test="createByName != null and createByName != ''">create_by,</when>
+                <when test="createdBy != null and createdBy != ''">create_by,</when>
+            </choose>
+            <if test="tenantId != null">tenant_id,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="description != null">#{description},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="createById != null">#{createById},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createDept != null">#{createDept},</if>
+            <choose>
+                <when test="createByName != null and createByName != ''">#{createByName},</when>
+                <when test="createdBy != null and createdBy != ''">#{createdBy},</when>
+            </choose>
+            <if test="tenantId != null">#{tenantId},</if>
+            now()
+        </trim>
+    </insert>
+
+    <update id="updateProjectManagement" parameterType="org.ruoyi.chat.domain.ProjectManagement">
+        update project_management
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="deleteProjectManagementById" parameterType="Long">
+        update project_management set del_flag = '1' where id = #{id}
+    </update>
+
+    <select id="countTasksByProjectId" parameterType="Long" resultType="Integer">
+        select count(*)
+        from task_management
+        where project_id = #{projectId} and del_flag = '0'
+    </select>
+
+    <select id="countCompletedTasksByProjectId" parameterType="Long" resultType="Integer">
+        select count(*)
+        from task_management
+        where project_id = #{projectId} and status = 'completed' and del_flag = '0'
+    </select>
+
+    <select id="selectTasksByProjectId" resultType="java.util.HashMap">
+        select id, title, description, priority, task_type, status, create_time, update_time
+        from task_management
+        where project_id = #{projectId} and del_flag = '0'
+        <if test="status != null and status != ''">
+            and status = #{status}
+        </if>
+        order by create_time desc
+    </select>
+
+    <select id="selectProjectStatistics" parameterType="Long" resultType="java.util.HashMap">
+        select
+            count(*) as taskCount,
+            sum(case when status = 'completed' then 1 else 0 end) as completedTaskCount,
+            sum(case when status = 'in_progress' then 1 else 0 end) as inProgressTaskCount,
+            sum(case when status = 'pending' then 1 else 0 end) as pendingTaskCount,
+            sum(case when status = 'cancelled' then 1 else 0 end) as cancelledTaskCount
+        from task_management
+        where project_id = #{projectId} and del_flag = '0'
+    </select>
+
+</mapper>
+

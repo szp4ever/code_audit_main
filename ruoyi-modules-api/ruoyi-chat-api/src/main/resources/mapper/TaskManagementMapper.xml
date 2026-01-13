@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.TaskManagementMapper">
+
+    <resultMap id="TaskManagementResult" type="org.ruoyi.chat.domain.TaskManagement">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="priority" column="priority"/>
+        <result property="taskType" column="task_type"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createDept" column="create_dept"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectTaskManagementVo">
+        select id, title, description, priority, task_type, status, remark, 
+               create_dept, create_by, create_time, update_by, update_time, 
+               del_flag, tenant_id
+        from task_management
+    </sql>
+
+    <select id="selectTaskManagementById" parameterType="Long" resultMap="TaskManagementResult">
+        <include refid="selectTaskManagementVo"/>
+        where id = #{id} and del_flag = '0'
+    </select>
+
+    <select id="selectTaskManagementList" parameterType="org.ruoyi.chat.domain.TaskManagement" 
+            resultMap="TaskManagementResult">
+        <include refid="selectTaskManagementVo"/>
+        <where>
+            del_flag = '0'
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <if test="priority != null and priority != ''">
+                and priority = #{priority}
+            </if>
+            <if test="taskType != null and taskType != ''">
+                and task_type = #{taskType}
+            </if>
+            <if test="title != null and title != ''">
+                and title like concat('%', #{title}, '%')
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <insert id="insertTaskManagement" parameterType="org.ruoyi.chat.domain.TaskManagement" useGeneratedKeys="true" keyProperty="id">
+        insert into task_management
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="title != null and title != ''">title,</if>
+            <if test="description != null">description,</if>
+            <if test="priority != null and priority != ''">priority,</if>
+            <if test="taskType != null and taskType != ''">task_type,</if>
+            <if test="status != null and status != ''">status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createDept != null">create_dept,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="tenantId != null">tenant_id,</if>
+            create_time
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="title != null and title != ''">#{title},</if>
+            <if test="description != null">#{description},</if>
+            <if test="priority != null and priority != ''">#{priority},</if>
+            <if test="taskType != null and taskType != ''">#{taskType},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createDept != null">#{createDept},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="tenantId != null">#{tenantId},</if>
+            sysdate()
+        </trim>
+    </insert>
+
+    <update id="updateTaskManagement" parameterType="org.ruoyi.chat.domain.TaskManagement">
+        update task_management
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="priority != null and priority != ''">priority = #{priority},</if>
+            <if test="taskType != null and taskType != ''">task_type = #{taskType},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTaskManagementById" parameterType="Long">
+        update task_management set del_flag = '1' where id = #{id}
+    </delete>
+
+    <!-- 任务状态统计 -->
+    <select id="selectStatusStats" resultType="java.util.HashMap">
+        SELECT 
+            status as `key`,
+            COUNT(*) as `value`
+        FROM task_management
+        WHERE del_flag = '0'
+        GROUP BY status
+    </select>
+
+    <!-- 任务类型统计 -->
+    <select id="selectTypeStats" resultType="java.util.HashMap">
+        SELECT 
+            task_type as `key`,
+            COUNT(*) as `value`
+        FROM task_management
+        WHERE del_flag = '0'
+        GROUP BY task_type
+    </select>
+
+    <!-- 任务耗时统计 -->
+    <select id="selectDurationStats" parameterType="String" resultType="org.ruoyi.chat.domain.vo.TaskDurationStatItem">
+        SELECT 
+            <choose>
+                <when test="timeRange == 'hour'">
+                    DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00') as date,
+                </when>
+                <when test="timeRange == 'week'">
+                    CONCAT(YEAR(create_time), '-W', LPAD(WEEK(create_time, 1), 2, '0')) as date,
+                </when>
+                <otherwise>
+                    DATE(create_time) as date,
+                </otherwise>
+            </choose>
+            AVG(TIMESTAMPDIFF(SECOND, create_time, 
+                CASE 
+                    WHEN status = 'completed' AND update_time IS NOT NULL 
+                    THEN update_time 
+                    ELSE NOW() 
+                END)) as avgDuration,
+            COUNT(*) as count
+        FROM task_management
+        WHERE del_flag = '0'
+        GROUP BY 
+            <choose>
+                <when test="timeRange == 'hour'">
+                    DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')
+                </when>
+                <when test="timeRange == 'week'">
+                    YEAR(create_time), WEEK(create_time, 1)
+                </when>
+                <otherwise>
+                    DATE(create_time)
+                </otherwise>
+            </choose>
+        ORDER BY date DESC
+        LIMIT 30
+    </select>
+
+</mapper>
+
+
+
+
+
+
