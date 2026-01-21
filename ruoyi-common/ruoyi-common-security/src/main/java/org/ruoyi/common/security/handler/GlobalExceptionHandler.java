@@ -19,6 +19,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 全局异常处理器
@@ -136,5 +137,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DemoModeException.class)
     public R<Void> handleDemoModeException(DemoModeException e) {
         return R.fail("演示模式，不允许操作");
+    }
+
+    /**
+     * 文件上传大小超限异常
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public R<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',文件上传大小超出限制'{}'", requestURI, e.getMessage());
+        // 从异常消息中提取限制大小信息
+        String message = e.getMessage();
+        if (message != null && message.contains("exceeds")) {
+            // 尝试提取具体的大小限制信息
+            return R.fail("上传文件大小超出限制，请减小文件大小后重试。单个文件最大500MB，总大小最大2GB");
+        }
+        return R.fail("上传文件大小超出限制，请减小文件大小后重试");
     }
 }

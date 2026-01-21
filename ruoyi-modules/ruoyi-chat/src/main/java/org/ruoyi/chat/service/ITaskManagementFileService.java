@@ -23,6 +23,16 @@ public interface ITaskManagementFileService {
     TaskManagementFile uploadFile(MultipartFile file, Long taskId);
 
     /**
+     * 批量上传文件（支持文件夹上传）
+     *
+     * @param files 文件数组
+     * @param relativePaths 相对路径数组（与files对应，可为null）
+     * @param taskId 任务ID（可选）
+     * @return 文件信息列表
+     */
+    List<TaskManagementFile> uploadFiles(MultipartFile[] files, String[] relativePaths, Long taskId);
+
+    /**
      * 下载文件
      *
      * @param fileId 文件ID
@@ -39,6 +49,7 @@ public interface ITaskManagementFileService {
      */
     List<TaskManagementFile> selectFilesByTaskId(Long taskId, String fileCategory);
 }
+
 
 
 

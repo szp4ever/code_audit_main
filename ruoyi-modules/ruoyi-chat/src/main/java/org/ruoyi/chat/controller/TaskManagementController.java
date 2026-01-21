@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.TaskManagementFile;
 import org.ruoyi.chat.domain.vo.TaskManagementVo;
+import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
 import org.ruoyi.chat.service.ITaskManagementFileService;
 import org.ruoyi.chat.service.ITaskManagementService;
 import org.ruoyi.common.core.domain.R;
@@ -16,9 +17,12 @@ import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 任务管理Controller
@@ -117,12 +121,26 @@ public class TaskManagementController extends BaseController {
      */
     @Operation(summary = "上传任务文件")
     @Log(title = "任务文件", businessType = BusinessType.INSERT)
-    @PostMapping("/file/upload")
+    @PostMapping(value = "/file/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public R<TaskManagementFile> uploadFile(
             @RequestPart("file") MultipartFile file,
             @RequestParam(value = "taskId", required = false) Long taskId) {
         TaskManagementFile taskFile = taskManagementFileService.uploadFile(file, taskId);
         return R.ok(taskFile);
+    }
+
+    /**
+     * 批量上传文件（支持文件夹上传）
+     */
+    @Operation(summary = "批量上传任务文件（支持文件夹上传）")
+    @Log(title = "任务文件", businessType = BusinessType.INSERT)
+    @PostMapping(value = "/file/uploadBatch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public R<List<TaskManagementFile>> uploadFiles(
+            @RequestPart("files") MultipartFile[] files,
+            @RequestParam(value = "relativePaths", required = false) String[] relativePaths,
+            @RequestParam(value = "taskId", required = false) Long taskId) {
+        List<TaskManagementFile> uploadedFiles = taskManagementFileService.uploadFiles(files, relativePaths, taskId);
+        return R.ok(uploadedFiles);
     }
 
     /**
@@ -132,6 +150,16 @@ public class TaskManagementController extends BaseController {
     @GetMapping("/file/download/{fileId}")
     public void downloadFile(@PathVariable Long fileId, HttpServletResponse response) {
         taskManagementFileService.downloadFile(fileId, response);
+    }
+
+    /**
+     * 获取任务漏洞详情
+     */
+    @Operation(summary = "获取任务漏洞详情")
+    @GetMapping("/vulnerabilities/{taskId}")
+    public R<TaskVulnerabilityDetailVo> getTaskVulnerabilities(@PathVariable Long taskId) {
+        TaskVulnerabilityDetailVo detail = taskManagementService.getTaskVulnerabilities(taskId);
+        return R.ok(detail);
     }
 }
 

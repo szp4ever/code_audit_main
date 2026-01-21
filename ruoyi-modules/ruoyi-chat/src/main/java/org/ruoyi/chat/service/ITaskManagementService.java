@@ -3,6 +3,7 @@ package org.ruoyi.chat.service;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
 import org.ruoyi.chat.domain.vo.TaskManagementVo;
+import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 
@@ -78,6 +79,14 @@ public interface ITaskManagementService {
      * @return 耗时统计结果
      */
     List<TaskDurationStatItem> getDurationStats(String timeRange);
+
+    /**
+     * 获取任务漏洞详情
+     *
+     * @param taskId 任务ID
+     * @return 任务漏洞详情
+     */
+    TaskVulnerabilityDetailVo getTaskVulnerabilities(Long taskId);
 }
 
 

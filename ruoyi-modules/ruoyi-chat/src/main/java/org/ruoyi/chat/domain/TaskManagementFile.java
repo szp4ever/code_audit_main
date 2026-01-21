@@ -38,6 +38,11 @@ public class TaskManagementFile implements Serializable {
     private String name;
 
     /**
+     * 相对路径（用于文件夹上传，如：src/main/java/App.java）
+     */
+    private String relativePath;
+
+    /**
      * 文件URL
      */
     private String url;

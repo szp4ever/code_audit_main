@@ -9,10 +9,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.TaskManagementFile;
 import org.ruoyi.chat.domain.TaskManagementTag;
+import org.ruoyi.chat.domain.TaskManagementIssue;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
 import org.ruoyi.chat.domain.vo.TaskManagementFileVo;
 import org.ruoyi.chat.domain.vo.TaskManagementVo;
+import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
+import org.ruoyi.chat.domain.vo.VulnerabilityVo;
 import org.ruoyi.chat.mapper.TaskManagementFileMapper;
+import org.ruoyi.chat.mapper.TaskManagementIssueMapper;
 import org.ruoyi.chat.mapper.TaskManagementMapper;
 import org.ruoyi.chat.mapper.TaskManagementTagMapper;
 import org.ruoyi.chat.service.ITaskManagementService;
@@ -42,6 +46,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     private final TaskManagementMapper taskManagementMapper;
     private final TaskManagementFileMapper taskManagementFileMapper;
     private final TaskManagementTagMapper taskManagementTagMapper;
+    private final TaskManagementIssueMapper taskManagementIssueMapper;
     private final ITaskProcessingService taskProcessingService;
 
     /**
@@ -250,6 +255,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     private TaskManagementVo convertToVo(TaskManagement task) {
         TaskManagementVo vo = new TaskManagementVo();
         vo.setId(task.getId());
+        vo.setProjectId(task.getProjectId());
         vo.setTitle(task.getTitle());
         vo.setDescription(task.getDescription());
         vo.setPriority(task.getPriority());
@@ -346,6 +352,98 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             timeRange = "day";
         }
         return taskManagementMapper.selectDurationStats(timeRange);
+    }
+
+    /**
+     * 获取任务漏洞详情
+     */
+    @Override
+    public TaskVulnerabilityDetailVo getTaskVulnerabilities(Long taskId) {
+        // 查询任务信息
+        TaskManagement task = taskManagementMapper.selectById(taskId);
+        if (task == null) {
+            return null;
+        }
+
+        // 查询issues列表
+        List<TaskManagementIssue> issues = taskManagementIssueMapper.selectIssuesByTaskId(taskId);
+        
+        // 统计severity数量
+        List<Map<String, Object>> severityStats = taskManagementIssueMapper.selectSeverityCountByTaskId(taskId);
+        Map<String, Integer> severityCount = new HashMap<>();
+        if (CollUtil.isNotEmpty(severityStats)) {
+            for (Map<String, Object> stat : severityStats) {
+                String severity = String.valueOf(stat.get("severity")).toLowerCase();
+                Integer count = ((Number) stat.get("count")).intValue();
+                severityCount.put(severity, count);
+            }
+        }
+
+        // 转换为VO
+        TaskVulnerabilityDetailVo detailVo = new TaskVulnerabilityDetailVo();
+        detailVo.setTaskId(taskId);
+        detailVo.setTaskTitle(task.getTitle());
+        detailVo.setTotalCount(issues != null ? issues.size() : 0);
+        detailVo.setSeverityCount(severityCount);
+        
+        // 转换issues为VulnerabilityVo列表
+        List<VulnerabilityVo> vulnerabilityList = new ArrayList<>();
+        if (CollUtil.isNotEmpty(issues)) {
+            for (TaskManagementIssue issue : issues) {
+                VulnerabilityVo vulnVo = convertIssueToVulnerabilityVo(issue);
+                vulnerabilityList.add(vulnVo);
+            }
+        }
+        detailVo.setVulnerabilities(vulnerabilityList);
+
+        return detailVo;
+    }
+
+    /**
+     * 转换Issue为VulnerabilityVo
+     */
+    private VulnerabilityVo convertIssueToVulnerabilityVo(TaskManagementIssue issue) {
+        VulnerabilityVo vo = new VulnerabilityVo();
+        vo.setId(issue.getId());
+        vo.setTaskId(issue.getTaskId());
+        vo.setTitle(issue.getIssueName());
+        vo.setDescription(issue.getDescription());
+        
+        // 转换severity为小写（Low -> low, Medium -> medium, High -> high, Critical -> critical）
+        String severity = issue.getSeverity();
+        if (severity != null) {
+            vo.setSeverity(severity.toLowerCase());
+        } else {
+            vo.setSeverity("low");
+        }
+        
+        vo.setFilePath(issue.getFileName());
+        
+        // 转换lineNumber为Integer（如果是范围，取第一个数字）
+        String lineNumberStr = issue.getLineNumber();
+        if (lineNumberStr != null && !lineNumberStr.isEmpty()) {
+            try {
+                // 如果是范围（如"45-48"），取第一个数字
+                if (lineNumberStr.contains("-")) {
+                    String firstNumber = lineNumberStr.split("-")[0].trim();
+                    vo.setLineNumber(Integer.parseInt(firstNumber));
+                } else {
+                    vo.setLineNumber(Integer.parseInt(lineNumberStr.trim()));
+                }
+            } catch (NumberFormatException e) {
+                log.warn("无法解析行号: {}", lineNumberStr);
+                vo.setLineNumber(null);
+            }
+        } else {
+            vo.setLineNumber(null);
+        }
+        
+        vo.setCodeSnippet(null); // 数据库中没有此字段
+        vo.setFixSuggestion(issue.getFixSuggestion());
+        vo.setCategory(null); // 数据库中没有此字段
+        vo.setCreatedAt(issue.getCreateTime());
+        
+        return vo;
     }
 }
 

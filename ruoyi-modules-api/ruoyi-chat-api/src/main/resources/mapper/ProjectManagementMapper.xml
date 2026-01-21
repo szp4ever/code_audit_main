@@ -13,7 +13,7 @@
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <result property="tenantId" column="tenant_id"/>
-        <result property="createDept" column="create_dept"/>
+        <result property="createDeptName" column="create_dept" jdbcType="VARCHAR"/>
         <result property="createByName" column="create_by" jdbcType="VARCHAR"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -59,7 +59,7 @@
             <if test="status != null and status != ''">status,</if>
             <if test="createById != null">create_by_id,</if>
             <if test="remark != null">remark,</if>
-            <if test="createDept != null">create_dept,</if>
+            <if test="createDeptName != null and createDeptName != ''">create_dept,</if>
             <choose>
                 <when test="createByName != null and createByName != ''">create_by,</when>
                 <when test="createdBy != null and createdBy != ''">create_by,</when>
@@ -73,7 +73,7 @@
             <if test="status != null and status != ''">#{status},</if>
             <if test="createById != null">#{createById},</if>
             <if test="remark != null">#{remark},</if>
-            <if test="createDept != null">#{createDept},</if>
+            <if test="createDeptName != null and createDeptName != ''">#{createDeptName},</if>
             <choose>
                 <when test="createByName != null and createByName != ''">#{createByName},</when>
                 <when test="createdBy != null and createdBy != ''">#{createdBy},</when>

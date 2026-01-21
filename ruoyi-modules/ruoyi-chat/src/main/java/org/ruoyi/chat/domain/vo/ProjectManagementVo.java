@@ -50,6 +50,11 @@ public class ProjectManagementVo implements Serializable {
     private Long createdById;
 
     /**
+     * 创建部门（部门名称）
+     */
+    private String createdByDept;
+
+    /**
      * 创建时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "GMT")
@@ -76,4 +81,5 @@ public class ProjectManagementVo implements Serializable {
      */
     private List<String> tags;
 }
+
 

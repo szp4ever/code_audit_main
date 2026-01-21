@@ -58,10 +58,36 @@ public class ProjectManagementServiceImpl implements IProjectManagementService {
             projectManagement.setCreateByName(projectManagement.getCreatedBy());
         }
         
+        // 处理前端传来的创建部门信息
+        // 直接存储前端传来的字符串，不进行任何转换或查询
+        // 优先使用createdByDept（前端传入的字段名）
+        if (ObjectUtil.isNotEmpty(projectManagement.getCreatedByDept())) {
+            projectManagement.setCreateDeptName(projectManagement.getCreatedByDept());
+            log.info("从createdByDept设置createDeptName: {}", projectManagement.getCreatedByDept());
+        }
+        // 如果createdByDept为空，尝试使用createDeptId（如果前端传了这个字段）
+        else if (ObjectUtil.isNotEmpty(projectManagement.getCreateDeptId())) {
+            // 将Long类型的createDeptId转换为String
+            projectManagement.setCreateDeptName(String.valueOf(projectManagement.getCreateDeptId()));
+            log.info("从createDeptId设置createDeptName: {}", projectManagement.getCreateDeptId());
+        }
+        // 如果createDeptId也为空，但createDeptName不为空（前端直接传了createDept），则使用createDeptName
+        // 注意：我们在ProjectManagement中使用createDeptName字段（String类型），直接存储前端传来的字符串
+        
         log.info("========== 创建项目开始 ==========");
         log.info("项目名称: {}", projectManagement.getName());
         log.info("创建人: {}", projectManagement.getCreateByName());
         log.info("创建人ID: {}", projectManagement.getCreateById());
+        log.info("创建部门 (createDeptName): {}", projectManagement.getCreateDeptName());
+        log.info("前端传来的createdByDept: {}", projectManagement.getCreatedByDept());
+        log.info("前端传来的createDeptId: {}", projectManagement.getCreateDeptId());
+        
+        // 如果createDeptName仍然为null，记录警告
+        if (projectManagement.getCreateDeptName() == null) {
+            log.warn("警告：createDeptName字段为null，可能前端没有传入部门信息");
+        } else {
+            log.info("createDeptName字段已设置，值: {}", projectManagement.getCreateDeptName());
+        }
         
         // 插入项目主表（使用自定义的insertProjectManagement方法，支持createdBy字段）
         projectManagementMapper.insertProjectManagement(projectManagement);
@@ -256,6 +282,7 @@ public class ProjectManagementServiceImpl implements IProjectManagementService {
         vo.setStatus(project.getStatus());
         vo.setCreatedBy(project.getCreateByName() != null ? project.getCreateByName() : "");
         vo.setCreatedById(project.getCreateById());
+        vo.setCreatedByDept(project.getCreateDeptName());
         vo.setCreatedAt(project.getCreateTime());
         vo.setUpdatedAt(project.getUpdateTime());
         return vo;
