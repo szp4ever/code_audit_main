@@ -58,6 +58,14 @@ public interface ITaskManagementService {
      */
     int deleteTaskById(Long id);
 
+
+    /**
+     * 重试任务
+     *
+     * @param id 任务ID
+     * @return 结果
+     */
+    int retryTaskById(Long id);
     /**
      * 获取任务状态统计
      *

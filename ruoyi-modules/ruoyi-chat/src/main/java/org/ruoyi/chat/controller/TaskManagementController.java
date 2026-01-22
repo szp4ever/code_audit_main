@@ -117,6 +117,18 @@ public class TaskManagementController extends BaseController {
     }
 
     /**
+     * 重试任务
+     */
+    @Operation(summary = "重试任务")
+    @Log(title = "任务管理", businessType = BusinessType.INSERT)
+    @PostMapping("/retry/{id}")
+    public R<Void> retryTask(@PathVariable Long id) {
+        System.out.println("retryTaskController");
+        taskManagementService.retryTaskById(id);
+        return R.ok();
+    }
+
+    /**
      * 上传文件
      */
     @Operation(summary = "上传任务文件")

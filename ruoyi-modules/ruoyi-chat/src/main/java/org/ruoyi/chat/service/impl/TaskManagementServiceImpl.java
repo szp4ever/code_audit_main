@@ -250,6 +250,28 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     }
 
     /**
+     * 重试任务
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int retryTaskById(Long id) {
+        TaskManagement updateTask = new TaskManagement();
+        updateTask.setId(id);
+        updateTask.setStatus("pending");
+        updateTask.setUpdateTime(new Date()); // 更新修改时间
+
+        int updateCount = taskManagementMapper.updateById(updateTask);
+        TaskManagement latestTask = taskManagementMapper.selectTaskManagementById(id);
+        try {
+            taskProcessingService.processTask(latestTask);
+            log.info("任务重试请求已提交到后台线程池，任务ID: {}，任务将在后台异步执行", id);
+        } catch (Exception e) {
+            log.error("提交任务重试请求失败，任务ID: {}", id, e);
+        }
+        return updateCount;
+    }
+
+    /**
      * 转换为VO
      */
     private TaskManagementVo convertToVo(TaskManagement task) {

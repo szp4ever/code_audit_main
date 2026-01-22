@@ -92,6 +92,12 @@ public class TaskIssueResponse implements Serializable {
         private String description;
 
         /**
+         * 漏洞所属文件
+         */
+        @JsonProperty("file_name")
+        private String fileName;
+
+        /**
          * 修复建议
          */
         @JsonProperty("fix_suggestion")

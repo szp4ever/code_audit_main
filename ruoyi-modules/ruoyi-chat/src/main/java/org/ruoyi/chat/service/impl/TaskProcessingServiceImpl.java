@@ -317,7 +317,7 @@ public class TaskProcessingServiceImpl implements ITaskProcessingService {
             for (TaskIssueResponse.TaskIssueItem item : issues) {
                 TaskManagementIssue issue = new TaskManagementIssue();
                 issue.setTaskId(taskId);
-                issue.setFileName(fileName);
+                issue.setFileName(item.getFileName());
                 issue.setIssueName(item.getIssueName());
                 issue.setSeverity(item.getSeverity());
                 issue.setLineNumber(item.getLineNumber());
