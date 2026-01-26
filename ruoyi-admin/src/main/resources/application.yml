@@ -46,7 +46,7 @@ server:
 # 日志配置
 logging:
   level:
-    org.ruoyi: @logging.level@
+    org.ruoyi: info
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
@@ -69,7 +69,7 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: dev
   # 文件上传
   servlet:
     multipart:
@@ -251,7 +251,7 @@ springdoc:
     # 描述
     description: ''
     # 版本
-    version: '版本号: ${ruoyi.version}'
+    version: 1.0.0
     # 作者信息
     contact:
       name: ageerle
