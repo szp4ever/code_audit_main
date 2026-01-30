@@ -160,6 +160,62 @@
         LIMIT 30
     </select>
 
+    <!-- 月度任务数量统计 -->
+    <select id="selectTaskMonthlyCount" resultType="org.ruoyi.chat.domain.vo.TaskMonthlyCountItem">
+        SELECT
+        DATE_FORMAT(create_time, '%Y-%m') as month,
+        COUNT(*) as count,
+        task_type as type
+        FROM task_management
+        WHERE del_flag = '0'
+        <if test="startMonth != null and startMonth != '' and endMonth != null and endMonth != ''">
+            AND DATE_FORMAT(create_time, '%Y-%m') BETWEEN #{startMonth} AND #{endMonth}
+        </if>
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m'), task_type
+        ORDER BY month ASC, task_type ASC
+    </select>
+
+    <select id="selectTaskQuarterlyStats" parameterType="string" resultType="org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem">
+        SELECT
+            CASE
+                WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1'
+                WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2'
+                WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3'
+                ELSE 'Q4'
+        END as quarter,
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as fail,
+            ROUND(
+                IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*)),
+                2
+            ) as successRate,
+            ROUND(
+                IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*)),
+                2
+            ) as failRate
+        FROM task_management
+        WHERE
+            del_flag = '0'
+            AND DATE_FORMAT(create_time, '%Y') = #{year}
+        GROUP BY
+        CASE
+        WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1'
+        WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2'
+        WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3'
+        ELSE 'Q4'
+        END
+        ORDER BY quarter ASC
+    </select>
+
+    <select id="countTaskByStatus" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM task_management
+        WHERE del_flag = '0'
+        <!-- 按传入的 status 筛选，#{status} 防止 SQL 注入 -->
+        AND status = #{status}
+    </select>
+
 </mapper>
 
 

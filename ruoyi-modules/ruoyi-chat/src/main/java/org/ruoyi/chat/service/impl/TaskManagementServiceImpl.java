@@ -10,11 +10,7 @@ import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.TaskManagementFile;
 import org.ruoyi.chat.domain.TaskManagementTag;
 import org.ruoyi.chat.domain.TaskManagementIssue;
-import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
-import org.ruoyi.chat.domain.vo.TaskManagementFileVo;
-import org.ruoyi.chat.domain.vo.TaskManagementVo;
-import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
-import org.ruoyi.chat.domain.vo.VulnerabilityVo;
+import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.chat.mapper.TaskManagementFileMapper;
 import org.ruoyi.chat.mapper.TaskManagementIssueMapper;
 import org.ruoyi.chat.mapper.TaskManagementMapper;
@@ -26,6 +22,9 @@ import org.ruoyi.core.page.TableDataInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -374,6 +373,90 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             timeRange = "day";
         }
         return taskManagementMapper.selectDurationStats(timeRange);
+    }
+
+    /**
+     * 获取月度任务统计
+     */
+    @Override
+    public List<TaskMonthlyCountItem> getTaskMonthlyCount(String startMonth, String endMonth) {
+        // 1. 参数兜底：防止传入 null 或空字符串，保证后续查询不会出现异常
+        if (startMonth == null || startMonth.trim().isEmpty()) {
+            // 兜底：默认取当前月的前6个月（和前端默认范围一致，格式 YYYY-MM）
+            // 可根据项目需求调整兜底逻辑，此处仅作示例
+            LocalDate now = LocalDate.now();
+            startMonth = now.minusMonths(6).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        }
+        if (endMonth == null || endMonth.trim().isEmpty()) {
+            // 兜底：默认取当前月（格式 YYYY-MM）
+            endMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
+        }
+
+        // 2. 可选：参数格式验证（保证是 YYYY-MM 格式，避免无效查询）
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        try {
+            LocalDate.parse(startMonth + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate.parse(endMonth + "-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } catch (DateTimeException e) {
+            // 格式无效时，重置为默认范围（前6个月 → 当前月）
+            LocalDate now = LocalDate.now();
+            startMonth = now.minusMonths(6).format(formatter);
+            endMonth = now.format(formatter);
+        }
+
+        // 3. 保证开始年月不晚于结束年月（避免查询逻辑异常）
+        LocalDate startDate = LocalDate.parse(startMonth + "-01");
+        LocalDate endDate = LocalDate.parse(endMonth + "-01");
+        if (startDate.isAfter(endDate)) {
+            // 交换开始和结束年月，保证查询范围有效
+            String temp = startMonth;
+            startMonth = endMonth;
+            endMonth = temp;
+        }
+
+        // 4. 调用 Mapper 层方法，传递处理后的合法参数，查询统计数据
+        return taskManagementMapper.selectTaskMonthlyCount(startMonth, endMonth);
+    }
+
+    /**
+     * 季度任务统计实现
+     */
+    @Override
+    public List<TaskQuarterlyStatsItem> getTaskQuarterlyStats(String year) {
+        // 1. 参数兜底：防止 null 或空字符串，默认当前年
+        if (year == null || year.trim().isEmpty()) {
+            year = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy"));
+        }
+
+        // 2. 可选：参数格式验证（保证是 4 位年份，避免无效查询）
+        if (!year.matches("^\\d{4}$")) { // 正则匹配 4 位数字
+            year = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy"));
+        }
+
+        // 3. 调用 Mapper 层方法，传递处理后的合法年份参数
+        return taskManagementMapper.selectTaskQuarterlyStats(year);
+    }
+
+    /**
+     * 获取任务实时数量统计
+     */
+    @Override
+    public TaskRealTimeCountVO getTaskRealTimeCount() {
+        // 1. 初始化返回结果
+        TaskRealTimeCountVO realTimeCountVO = new TaskRealTimeCountVO();
+
+        // 2. 调用 Mapper 层查询各状态任务数量（按 status 统计）
+        Integer inProgressCount = taskManagementMapper.countTaskByStatus("in_progress");
+        Integer pendingCount = taskManagementMapper.countTaskByStatus("pending");
+        Integer completeCount = taskManagementMapper.countTaskByStatus("completed");
+
+        // 3. 组装返回结果（为空则设为 0，避免前端展示 null）
+        realTimeCountVO.setInProgressCount(inProgressCount == null ? 0 : inProgressCount);
+        realTimeCountVO.setPendingCount(pendingCount == null ? 0 : pendingCount);
+        realTimeCountVO.setCompleteCount(completeCount == null ? 0 : completeCount);
+
+        // 4. 返回结果
+        return realTimeCountVO;
     }
 
     /**
