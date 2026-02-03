@@ -1,9 +1,7 @@
 package org.ruoyi.chat.service;
 
 import org.ruoyi.chat.domain.TaskManagement;
-import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
-import org.ruoyi.chat.domain.vo.TaskManagementVo;
-import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
+import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 
@@ -97,6 +95,20 @@ public interface ITaskManagementService {
      * @return 任务漏洞详情
      */
     TaskVulnerabilityDetailVo getTaskVulnerabilities(Long taskId);
+
+    /**
+     * 获取月度任务数量
+     */
+    List<TaskMonthlyCountItem> getTaskMonthlyCount(String startMonth, String endMonth);
+
+    /**
+     * 获取季度任务数量
+     */
+    List<TaskQuarterlyStatsItem> getTaskQuarterlyStats(String year);
+    /**
+     * 获取任务实时数量
+     */
+    TaskRealTimeCountVO getTaskRealTimeCount();
 }
 
 
