@@ -92,6 +92,9 @@ public class TaskManagement extends BaseEntity {
      */
     @TableField(exist = false)
     private List<String> tags;
+
+    /** 关联的报告模板ID */
+    private Long templateId;
 }
 
 
