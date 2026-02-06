@@ -46,7 +46,7 @@ server:
 # 日志配置
 logging:
   level:
-    org.ruoyi: @logging.level@
+    org.ruoyi: info
     org.springframework: warn
     org.mybatis.spring.mapper: error
     org.apache.fury: warn
@@ -69,14 +69,18 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: @profiles.active@
+    active: dev
   # 文件上传
   servlet:
     multipart:
-      # 单个文件大小
-      max-file-size: 50MB
-      # 设置总上传的文件大小
-      max-request-size: 200MB
+      # 单个文件大小（文件夹上传时单个文件可能较大）
+      max-file-size: 500MB
+      # 设置总上传的文件大小（文件夹上传需要更大的总大小限制）
+      max-request-size: 2GB
+      # 文件写入磁盘的阈值，当大于这个阈值时将写入到磁盘
+      file-size-threshold: 10MB
+      # 上传文件的临时存储位置
+      location: ${java.io.tmpdir}
   mvc:
     format:
       date-time: yyyy-MM-dd HH:mm:ss
@@ -253,7 +257,7 @@ springdoc:
     # 描述
     description: ''
     # 版本
-    version: '版本号: ${ruoyi.version}'
+    version: 1.0.0
     # 作者信息
     contact:
       name: ageerle

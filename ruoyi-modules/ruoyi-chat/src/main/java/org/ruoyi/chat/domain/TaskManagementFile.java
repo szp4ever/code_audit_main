@@ -38,6 +38,11 @@ public class TaskManagementFile implements Serializable {
     private String name;
 
     /**
+     * 相对路径（用于文件夹上传，如：src/main/java/App.java）
+     */
+    private String relativePath;
+
+    /**
      * 文件URL
      */
     private String url;
@@ -60,7 +65,7 @@ public class TaskManagementFile implements Serializable {
     /**
      * 上传时间
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "GMT")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date uploadTime;
 
     /**
@@ -71,13 +76,13 @@ public class TaskManagementFile implements Serializable {
     /**
      * 创建时间
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "GMT")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
 
     /**
      * 更新时间
      */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "GMT")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
 
     /**

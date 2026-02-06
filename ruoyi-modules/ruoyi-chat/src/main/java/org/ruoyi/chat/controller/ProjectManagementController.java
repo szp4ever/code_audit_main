@@ -43,6 +43,8 @@ public class ProjectManagementController extends BaseController {
         log.info("========== Controller层：接收创建项目请求 ==========");
         log.info("项目名称: {}", projectManagement.getName());
         log.info("项目状态: {}", projectManagement.getStatus());
+        log.info("创建部门ID (createdByDept): {}", projectManagement.getCreatedByDept());
+        log.info("创建部门ID (createDept): {}", projectManagement.getCreateDept());
         
         // 打印标签信息
         if (projectManagement.getTags() != null && !projectManagement.getTags().isEmpty()) {
@@ -118,4 +120,5 @@ public class ProjectManagementController extends BaseController {
         return R.ok(statistics);
     }
 }
+
 

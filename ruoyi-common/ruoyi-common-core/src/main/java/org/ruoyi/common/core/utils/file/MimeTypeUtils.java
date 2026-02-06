@@ -43,4 +43,50 @@ public class MimeTypeUtils {
             // pdf
             "pdf"};
 
+    /**
+     * 代码文件扩展名（用于代码审计、代码规范检查等任务）
+     */
+    public static final String[] CODE_FILE_EXTENSION = {
+            // Java
+            "java", "class", "jar", "war", "ear",
+            // JavaScript/TypeScript
+            "js", "jsx", "ts", "tsx", "mjs", "cjs",
+            // Python
+            "py", "pyc", "pyo", "pyw", "pyd",
+            // C/C++
+            "c", "cpp", "cc", "cxx", "h", "hpp", "hxx", "hh",
+            // C#
+            "cs", "csx",
+            // Go
+            "go",
+            // Rust
+            "rs",
+            // PHP
+            "php", "php3", "php4", "php5", "phtml",
+            // Ruby
+            "rb", "rbw",
+            // Swift
+            "swift",
+            // Kotlin
+            "kt", "kts",
+            // Scala
+            "scala", "sc",
+            // HTML/CSS
+            "html", "htm", "xhtml", "css", "scss", "sass", "less", "styl",
+            // 配置文件
+            "json", "xml", "yml", "yaml", "properties", "ini", "conf", "config", "toml",
+            // 脚本文件
+            "sh", "bash", "zsh", "fish", "bat", "cmd", "ps1", "psm1",
+            // SQL
+            "sql", "ddl", "dml",
+            // 构建和依赖管理文件
+            "gradle", "maven", "pom", "build", "makefile", "cmake",
+            // 其他代码相关
+            "md", "markdown", "txt", "log", "gitignore", "dockerfile", "env",
+            // Web相关
+            "vue", "jsx", "tsx",
+            // 数据文件
+            "csv", "tsv"
+    };
+
 }

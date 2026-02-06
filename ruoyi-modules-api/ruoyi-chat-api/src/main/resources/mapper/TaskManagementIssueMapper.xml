@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.TaskManagementIssueMapper">
+
+    <resultMap id="TaskManagementIssueResult" type="org.ruoyi.chat.domain.TaskManagementIssue">
+        <id property="id" column="id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="fileName" column="file_name"/>
+        <result property="issueName" column="issue_name"/>
+        <result property="severity" column="severity"/>
+        <result property="lineNumber" column="line_number"/>
+        <result property="description" column="description"/>
+        <result property="fixSuggestion" column="fix_suggestion"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="delFlag" column="del_flag"/>
+    </resultMap>
+
+    <sql id="selectTaskManagementIssueVo">
+        select id, task_id, file_name, issue_name, severity, line_number, 
+               description, fix_suggestion, create_time, update_time, del_flag
+        from task_management_issue
+    </sql>
+
+    <select id="selectIssuesByTaskId" parameterType="Long" resultMap="TaskManagementIssueResult">
+        <include refid="selectTaskManagementIssueVo"/>
+        where task_id = #{taskId} and del_flag = '0'
+        order by 
+            case severity
+                when 'Critical' then 1
+                when 'High' then 2
+                when 'Medium' then 3
+                when 'Low' then 4
+                else 5
+            end,
+            create_time desc
+    </select>
+
+    <insert id="batchInsertIssues">
+        insert into task_management_issue(task_id, file_name, issue_name, severity, line_number, 
+                                         description, fix_suggestion, create_time, del_flag)
+        values
+        <foreach collection="issues" item="issue" separator=",">
+            (#{issue.taskId}, #{issue.fileName}, #{issue.issueName}, #{issue.severity}, 
+             #{issue.lineNumber}, #{issue.description}, #{issue.fixSuggestion}, now(), '0')
+        </foreach>
+    </insert>
+
+    <update id="deleteIssuesByTaskId" parameterType="Long">
+        update task_management_issue set del_flag = '1' where task_id = #{taskId}
+    </update>
+
+    <select id="selectSeverityCountByTaskId" parameterType="Long" resultType="java.util.HashMap">
+        select 
+            LOWER(severity) as severity,
+            COUNT(*) as count
+        from task_management_issue
+        where task_id = #{taskId} and del_flag = '0'
+        group by LOWER(severity)
+    </select>
+
+</mapper>
+

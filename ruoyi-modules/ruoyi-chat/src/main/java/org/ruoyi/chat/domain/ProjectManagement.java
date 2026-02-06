@@ -73,6 +73,32 @@ public class ProjectManagement extends BaseEntity {
     private Long createdById;
 
     /**
+     * 前端传入的创建部门ID（不映射到数据库，用于接收前端数据）
+     * 如果前端传的是createDeptId，则映射到createDept
+     */
+    @TableField(exist = false)
+    @JsonProperty("createDeptId")
+    private Long createDeptId;
+
+    /**
+     * 前端传入的创建部门（不映射到数据库，用于接收前端数据）
+     * 前端传入的字段名是createdByDept，可能是部门名称（String）或部门ID（Long）
+     * 先定义为String类型，支持部门名称
+     */
+    @TableField(exist = false)
+    @JsonProperty("createdByDept")
+    private String createdByDept;
+
+    /**
+     * 创建部门（String类型，直接存储前端传来的部门名称字符串）
+     * 注意：BaseEntity中的createDept是Long类型，但数据库中create_dept现在是varchar类型
+     * 使用@TableField忽略父类的createDept字段（Long类型），使用自己的String类型字段
+     */
+    @TableField(value = "create_dept")
+    @JsonProperty("createDept")
+    private String createDeptName;
+
+    /**
      * 备注
      */
     private String remark;

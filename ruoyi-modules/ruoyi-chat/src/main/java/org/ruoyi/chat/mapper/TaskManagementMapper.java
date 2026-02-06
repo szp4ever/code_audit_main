@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
+import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
+import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
 
 import java.util.List;
 import java.util.Map;
@@ -76,6 +78,25 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
      * @return 耗时统计结果
      */
     List<TaskDurationStatItem> selectDurationStats(@Param("timeRange") String timeRange);
+
+    /**
+     * 统计月度任务
+     */
+    List<TaskMonthlyCountItem> selectTaskMonthlyCount(@Param("startMonth") String startMonth, @Param("endMonth") String endMonth);
+
+    /**
+     * 统计季度信息
+     * @param year
+     * @return
+     */
+    List<TaskQuarterlyStatsItem> selectTaskQuarterlyStats(@Param("year") String year);
+
+    /**
+     * 按任务状态统计任务数量
+     * @param status
+     * @return
+     */
+    Integer countTaskByStatus(@Param("status") String status);
 }
 
 
