@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -34,6 +35,11 @@ public class KnowledgeFragment extends BaseEntity {
     private String kid;
 
     /**
+     * 知识条目UUID（关联 knowledge_item.item_uuid）
+     */
+    private String itemUuid;
+
+    /**
      * 文档ID
      */
     private String docId;
@@ -54,9 +60,29 @@ public class KnowledgeFragment extends BaseEntity {
     private String content;
 
     /**
+     * 向量库UUID（Weaviate返回的向量ID，删除时必须使用此ID）
+     */
+    private String vectorId;
+
+    /**
+     * 漏洞类型（冗余字段，用于快速过滤）
+     */
+    private String vulnerabilityType;
+
+    /**
+     * 适用语言（冗余字段）
+     */
+    private String language;
+
+    /**
      * 备注
      */
     private String remark;
 
+    /**
+     * 删除标志（0-存在 2-删除）
+     */
+    @TableField("del_flag")
+    private String delFlag;
 
 }

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,14 +59,27 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         client = new WeaviateClient(new Config(protocol, host));
         // 检查类是否存在，如果不存在就创建 schema
         Result<Schema> schemaResult = client.schema().getter().run();
+        if (schemaResult.hasErrors()) {
+            log.error("获取Weaviate schema失败: kid={}, className={}, error={}", kid, className, schemaResult.getError());
+            throw new ServiceException("获取Weaviate schema失败: " + schemaResult.getError());
+        }
+        
         Schema schema = schemaResult.getResult();
+        if (schema == null) {
+            log.warn("Weaviate schema为null，可能是服务未启动或配置错误: kid={}, className={}", kid, className);
+            throw new ServiceException("Weaviate schema为null，请检查服务是否正常运行");
+        }
+        
         boolean classExists = false;
-        for (WeaviateClass weaviateClass : schema.getClasses()) {
-            if (weaviateClass.getClassName().equals(className)) {
-                classExists = true;
-                break;
+        if (schema.getClasses() != null) {
+            for (WeaviateClass weaviateClass : schema.getClasses()) {
+                if (weaviateClass.getClassName().equals(className)) {
+                    classExists = true;
+                    break;
+                }
             }
         }
+        
         if (!classExists) {
             // 类不存在，创建 schema
             WeaviateClass build = WeaviateClass.builder()
@@ -80,7 +94,8 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                     .build();
             Result<Boolean> createResult = client.schema().classCreator().withClass(build).run();
             if (createResult.hasErrors()) {
-                log.error("Schema 创建失败: {}", createResult.getError());
+                log.error("Schema 创建失败: kid={}, className={}, error={}", kid, className, createResult.getError());
+                throw new ServiceException("Schema 创建失败: " + createResult.getError());
             } else {
                 log.info("Schema 创建成功: {}", className);
             }
@@ -89,15 +104,22 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
 
     @Override
     public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo) {
+        storeEmbeddings(storeEmbeddingBo, null);
+    }
+
+    @Override
+    public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo, org.ruoyi.service.IAttachProcessService attachProcessService) {
         createSchema(storeEmbeddingBo.getKid(), storeEmbeddingBo.getEmbeddingModelName());
         EmbeddingModel embeddingModel = getEmbeddingModel(storeEmbeddingBo.getEmbeddingModelName(), null);
         List<String> chunkList = storeEmbeddingBo.getChunkList();
         List<String> fidList = storeEmbeddingBo.getFids();
         String kid = storeEmbeddingBo.getKid();
         String docId = storeEmbeddingBo.getDocId();
-        log.info("向量存储条数记录: " + chunkList.size());
+        String processId = storeEmbeddingBo.getProcessId();
+        int totalCount = chunkList.size();
+        log.info("向量存储条数记录: " + totalCount);
         long startTime = System.currentTimeMillis();
-        for (int i = 0; i < chunkList.size(); i++) {
+        for (int i = 0; i < totalCount; i++) {
             String text = chunkList.get(i);
             String fid = fidList.get(i);
             Embedding embedding = embeddingModel.embed(text).content();
@@ -108,11 +130,25 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
                     "docId", docId
             );
             Float[] vector = toObjectArray(embedding.vector());
+            String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
             client.data().creator()
-                    .withClassName("LocalKnowledge" + kid)
+                    .withClassName(className)
                     .withProperties(properties)
                     .withVector(vector)
                     .run();
+            
+            //实时更新向量化进度（每5个或最后一个）
+            if (attachProcessService != null && processId != null && (i % 5 == 0 || i == totalCount - 1)) {
+                try {
+                    Map<String, Object> progressData = new HashMap<>();
+                    progressData.put("currentIndex", i + 1);
+                    progressData.put("totalCount", totalCount);
+                    progressData.put("stage", "VECTORIZING");
+                    attachProcessService.updateProgress(processId, progressData);
+                } catch (Exception e) {
+                    log.warn("更新向量化进度失败: processId={}, error={}", processId, e.getMessage());
+                }
+            }
         }
         long endTime = System.currentTimeMillis();
         log.info("向量存储完成消耗时间：" + (endTime - startTime) / 1000 + "秒");
@@ -183,12 +219,37 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         String className = vectorStoreProperties.getWeaviate().getClassname();
         String finalClassName = className + id;
         WeaviateClient client = new WeaviateClient(new Config(protocol, host));
+        
+        // 先检查类是否存在
+        Result<Schema> schemaResult = client.schema().getter().run();
+        if (schemaResult.hasErrors()) {
+            log.warn("获取Weaviate schema失败: id={}, error={}", id, schemaResult.getError());
+            return;
+        }
+        
+        Schema schema = schemaResult.getResult();
+        boolean classExists = false;
+        if (schema != null && schema.getClasses() != null) {
+            for (WeaviateClass weaviateClass : schema.getClasses()) {
+                if (weaviateClass.getClassName().equals(finalClassName)) {
+                    classExists = true;
+                    break;
+                }
+            }
+        }
+        
+        // 如果类不存在，视为成功（目标已达成）
+        if (!classExists) {
+            log.info("向量类不存在，无需删除: id={}, className={}", id, finalClassName);
+            return;
+        }
+        
+        // 类存在，执行删除
         Result<Boolean> result = client.schema().classDeleter().withClassName(finalClassName).run();
         if (result.hasErrors()) {
-            log.error("失败删除向量: " + result.getError());
-            throw new ServiceException("失败删除向量数据!");
+            log.warn("删除向量类失败: id={}, className={}, error={}", id, finalClassName, result.getError());
         } else {
-            log.info("成功删除向量数据: " + result.getResult());
+            log.info("成功删除向量类: id={}, className={}", id, finalClassName);
         }
     }
 
@@ -213,9 +274,38 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
     }
 
     @Override
+    @SneakyThrows
     public void removeByFid(String fid, String kid) {
+        String protocol = vectorStoreProperties.getWeaviate().getProtocol();
+        String host = vectorStoreProperties.getWeaviate().getHost();
         String className = vectorStoreProperties.getWeaviate().getClassname() + kid;
-        // 构建 Where 条件
+        WeaviateClient client = new WeaviateClient(new Config(protocol, host));
+        
+        // 先检查类是否存在
+        Result<Schema> schemaResult = client.schema().getter().run();
+        if (schemaResult.hasErrors()) {
+            log.warn("获取Weaviate schema失败: fid={}, kid={}, error={}", fid, kid, schemaResult.getError());
+            return;
+        }
+        
+        Schema schema = schemaResult.getResult();
+        boolean classExists = false;
+        if (schema != null && schema.getClasses() != null) {
+            for (WeaviateClass weaviateClass : schema.getClasses()) {
+                if (weaviateClass.getClassName().equals(className)) {
+                    classExists = true;
+                    break;
+                }
+            }
+        }
+        
+        // 如果类不存在，视为成功（目标已达成）
+        if (!classExists) {
+            log.info("向量类不存在，无需删除对象: fid={}, kid={}, className={}", fid, kid, className);
+            return;
+        }
+        
+        // 类存在，执行删除对象
         WhereFilter whereFilter = WhereFilter.builder()
                 .path("fid")
                 .operator(Operator.Equal)
@@ -228,7 +318,7 @@ public class WeaviateVectorStoreStrategy extends AbstractVectorStoreStrategy {
         if (result != null && !result.hasErrors()) {
             log.info("成功删除 fid={} 的所有向量数据", fid);
         } else {
-            log.error("删除失败: {}", result.getError());
+            log.warn("删除向量对象失败: fid={}, kid={}, error={}", fid, kid, result != null ? result.getError() : "result is null");
         }
     }
 

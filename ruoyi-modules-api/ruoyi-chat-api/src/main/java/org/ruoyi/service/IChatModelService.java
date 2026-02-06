@@ -74,4 +74,10 @@ public interface IChatModelService {
      */
     ChatModel getPPT();
 
+    /**
+     * 为知识提取场景选择适合的chat模型
+     * 智能过滤：跳过占位符模型，返回第一个真正有效的模型
+     */
+    ChatModelVo selectChatModelForKnowledgeExtraction();
+
 }

@@ -135,6 +135,7 @@ docker image ls
 
 然后在 `docker-compose.yaml` 文件中，将对应服务的镜像名修改为：
 
+
 ```
 image: ruoyi-ai-backend:v20251013
 ```
@@ -194,6 +195,8 @@ source /docker-entrypoint-initdb.d/ruoyi-ai.sql;
 
 ### 九、常用 Docker 命令
 
+#### 容器管理
+
 | 功能        | 命令                                |
 |-----------|-----------------------------------|
 | 查看容器状态    | `docker ps -a`                    |
@@ -202,6 +205,20 @@ source /docker-entrypoint-initdb.d/ruoyi-ai.sql;
 | 重启服务      | `docker compose restart`          |
 | 重新构建镜像    | `docker compose build --no-cache` |
 | 清理无用镜像/容器 | `docker system prune -a`          |
+
+#### 数据库操作
+
+| 功能        | 命令                                |
+|-----------|-----------------------------------|
+| 进入 MySQL 交互式命令行（可执行任意 SQL） | `docker exec -it ruoyi-ai-mysql mysql -uroot -proot ruoyi-ai` |
+| 进入 MySQL 容器 | `docker exec -it ruoyi-ai-mysql bash` |
+| 连接 MySQL 数据库（需输入密码） | `docker exec -it ruoyi-ai-mysql mysql -uroot -p` |
+| 导入 SQL 文件 | `docker exec -i ruoyi-ai-mysql mysql -uroot -proot ruoyi-ai < /path/to/file.sql` |
+| 导出数据库 | `docker exec ruoyi-ai-mysql mysqldump -uroot -proot ruoyi-ai > backup.sql` |
+| 查看数据库列表 | `docker exec -it ruoyi-ai-mysql mysql -uroot -proot -e "SHOW DATABASES;"` |
+| 查看表列表 | `docker exec -it ruoyi-ai-mysql mysql -uroot -proot ruoyi-ai -e "SHOW TABLES;"` |
+| 备份数据库（带时间戳） | `docker exec ruoyi-ai-mysql mysqldump -uroot -proot ruoyi-ai > ruoyi-ai-$(date +%Y%m%d-%H%M%S).sql` |
+| 查看 MySQL 日志 | `docker logs -f ruoyi-ai-mysql` |
 
 ------
 

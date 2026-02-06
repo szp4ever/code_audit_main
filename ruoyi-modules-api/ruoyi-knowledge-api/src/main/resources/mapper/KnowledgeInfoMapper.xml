@@ -8,4 +8,9 @@
         FROM knowledge_info
         WHERE kid = #{kid}
     </select>
+    <select id="selectVoByKid" resultType="org.ruoyi.domain.vo.KnowledgeInfoVo">
+        SELECT *
+        FROM knowledge_info
+        WHERE kid = #{kid}
+    </select>
 </mapper>

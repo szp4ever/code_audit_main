@@ -54,6 +54,26 @@ public class KnowledgeInfo extends BaseEntity {
     private String description;
 
     /**
+     * 知识库分类（用途类型，如：漏洞修复、编码规范、安全标准等）
+     */
+    private String category;
+
+    /**
+     * 占用字节数（所有知识条目内容的总大小）
+     */
+    private Long dataSize;
+
+    /**
+     * 知识条目数量
+     */
+    private Integer itemCount;
+
+    /**
+     * 知识片段数量
+     */
+    private Integer fragmentCount;
+
+    /**
      * 知识分隔符
      */
     private String knowledgeSeparator;

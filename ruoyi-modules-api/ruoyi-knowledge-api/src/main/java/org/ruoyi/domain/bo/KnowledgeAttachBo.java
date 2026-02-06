@@ -88,5 +88,49 @@ public class KnowledgeAttachBo extends BaseEntity {
     @NotNull(message = "写入向量数据库状态10未开始，20进行中，30已完成不能为空", groups = {AddGroup.class, EditGroup.class})
     private Integer vectorStatus;
 
+    /**
+     * 创建时间范围筛选：开始时间
+     */
+    private java.util.Date createTimeStart;
+
+    /**
+     * 创建时间范围筛选：结束时间
+     */
+    private java.util.Date createTimeEnd;
+
+    /**
+     * 拆解图片状态筛选（支持多选）
+     */
+    private java.util.List<Integer> picStatusList;
+
+    /**
+     * 分析图片状态筛选（支持多选）
+     */
+    private java.util.List<Integer> picAnysStatusList;
+
+    /**
+     * 向量化状态筛选（支持多选）
+     */
+    private java.util.List<Integer> vectorStatusList;
+
+    /**
+     * 创建人筛选（支持多选）
+     */
+    private java.util.List<String> createByList;
+
+    /**
+     * 关联条目数量最小值（筛选用）
+     */
+    private Integer itemCountMin;
+
+    /**
+     * 关联条目数量最大值（筛选用）
+     */
+    private Integer itemCountMax;
+
+    /**
+     * 是否包含未完成的附件（true-包含，false/null-不包含，默认不包含）
+     */
+    private Boolean includeIncomplete;
 
 }

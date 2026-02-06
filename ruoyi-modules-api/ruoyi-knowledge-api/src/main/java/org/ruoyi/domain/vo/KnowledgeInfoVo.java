@@ -65,6 +65,31 @@ public class KnowledgeInfoVo implements Serializable {
     private String description;
 
     /**
+     * 知识库分类（用途类型）
+     */
+    @ExcelProperty(value = "分类", converter = ExcelDictConvert.class)
+    @ExcelDictFormat(dictType = "knowledge_category")
+    private String category;
+
+    /**
+     * 占用字节数（所有知识条目内容的总大小）
+     */
+    @ExcelProperty(value = "存储大小")
+    private Long dataSize;
+
+    /**
+     * 知识条目数量
+     */
+    @ExcelProperty(value = "条目数")
+    private Integer itemCount;
+
+    /**
+     * 知识片段数量
+     */
+    @ExcelProperty(value = "片段数")
+    private Integer fragmentCount;
+
+    /**
      * 知识分隔符
      */
     @ExcelProperty(value = "知识分隔符")
@@ -121,5 +146,36 @@ public class KnowledgeInfoVo implements Serializable {
     @ExcelProperty(value = "备注")
     private String remark;
 
+    /**
+     * 创建时间
+     */
+    @ExcelProperty(value = "创建时间")
+    private java.util.Date createTime;
+
+    /**
+     * 更新时间
+     */
+    @ExcelProperty(value = "更新时间")
+    private java.util.Date updateTime;
+
+    /**
+     * 创建人
+     */
+    private Long createBy;
+
+    /**
+     * 创建部门
+     */
+    private Long createDept;
+
+    /**
+     * 更新人
+     */
+    private Long updateBy;
+
+    /**
+     * 当前用户是否有编辑权限（管理员或创建者）
+     */
+    private Boolean canEdit;
 
 }

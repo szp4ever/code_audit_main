@@ -42,6 +42,10 @@ public class EmbeddingModelFactory {
             if (modelConfig == null) {
                 throw new IllegalArgumentException("未找到模型配置，name=" + name);
             }
+            
+            // 验证模型配置
+            validateModelConfig(modelConfig, "向量化");
+            
             if (modelConfig.getDimension() != null) {
                 modelConfig.setDimension(dimension);
             }
@@ -116,5 +120,74 @@ public class EmbeddingModelFactory {
         } catch (NoSuchBeanDefinitionException e) {
             throw new IllegalArgumentException("获取不到嵌入模型: " + factory, e);
         }
+    }
+
+    /**
+     * 验证模型配置是否有效
+     * 检查API key、api_host、provider_name等关键配置
+     */
+    private void validateModelConfig(ChatModelVo modelConfig, String operationName) {
+        if (modelConfig == null) {
+            throw new IllegalArgumentException(operationName + "失败：模型配置不存在");
+        }
+        
+        // 检查API Host
+        if (org.ruoyi.common.core.utils.StringUtils.isBlank(modelConfig.getApiHost())) {
+            throw new IllegalArgumentException(String.format(
+                "%s失败：模型 %s 的API地址(api_host)未配置。请在chat_model表中为该模型设置正确的api_host。",
+                operationName, modelConfig.getModelName()
+            ));
+        }
+        
+        // 检查API Key
+        if (org.ruoyi.common.core.utils.StringUtils.isBlank(modelConfig.getApiKey())) {
+            throw new IllegalArgumentException(String.format(
+                "%s失败：模型 %s 的API密钥(api_key)未配置。请在chat_model表中为该模型设置正确的api_key。",
+                operationName, modelConfig.getModelName()
+            ));
+        }
+        
+        // 检查API Key是否为占位符
+        String apiKey = modelConfig.getApiKey().trim();
+        if (isPlaceholderApiKey(apiKey)) {
+            throw new IllegalArgumentException(String.format(
+                "%s失败：模型 %s 的API密钥(api_key)为占位符，需要配置真实的API密钥。\n" +
+                "请在chat_model表中将模型 %s 的api_key字段更新为有效的API密钥。\n" +
+                "当前值: %s",
+                operationName, modelConfig.getModelName(), modelConfig.getModelName(), apiKey
+            ));
+        }
+        
+        // 检查Provider Name（对于Embedding模型很重要）
+        if (org.ruoyi.common.core.utils.StringUtils.isBlank(modelConfig.getProviderName())) {
+            log.warn("模型 {} 的provider_name未配置，可能影响模型实例创建。建议在chat_model表中设置provider_name（如：openai、zhipu、qwen等）",
+                modelConfig.getModelName());
+        }
+        
+        // 检查模型名称
+        if (org.ruoyi.common.core.utils.StringUtils.isBlank(modelConfig.getModelName())) {
+            throw new IllegalArgumentException(String.format(
+                "%s失败：模型配置的model_name为空。请在chat_model表中检查模型配置。",
+                operationName
+            ));
+        }
+    }
+
+    /**
+     * 判断API Key是否为占位符
+     */
+    private boolean isPlaceholderApiKey(String apiKey) {
+        if (org.ruoyi.common.core.utils.StringUtils.isBlank(apiKey)) {
+            return true;
+        }
+        String lowerKey = apiKey.toLowerCase();
+        // 常见的占位符模式
+        return lowerKey.equals("sk-xx") 
+            || lowerKey.equals("sk-xxx")
+            || lowerKey.equals("your-api-key")
+            || lowerKey.equals("api-key")
+            || lowerKey.startsWith("sk-placeholder")
+            || lowerKey.matches("sk-[a-z]{1,3}") // sk-a, sk-xx, sk-xxx等短占位符
+            || (lowerKey.length() < 10 && lowerKey.startsWith("sk-")); // 过短的sk-开头的key
     }
 }

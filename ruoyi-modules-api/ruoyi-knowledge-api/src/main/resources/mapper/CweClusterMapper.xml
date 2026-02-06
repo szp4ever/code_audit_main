@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.mapper.CweClusterMapper">
+
+    <resultMap id="CweClusterResult" type="org.ruoyi.domain.CweCluster">
+        <id property="id" column="id"/>
+        <result property="clusterId" column="cluster_id"/>
+        <result property="clusterMethod" column="cluster_method"/>
+        <result property="clusterNameZh" column="cluster_name_zh"/>
+        <result property="clusterNameEn" column="cluster_name_en"/>
+        <result property="categoryCode" column="category_code"/>
+        <result property="description" column="description"/>
+        <result property="keywords" column="keywords"/>
+        <result property="cweCount" column="cwe_count"/>
+        <result property="silhouetteScore" column="silhouette_score"/>
+        <result property="calinskiHarabaszScore" column="calinski_harabasz_score"/>
+        <result property="llmInterpretation" column="llm_interpretation"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="tenantId" column="tenant_id"/>
+    </resultMap>
+
+    <resultMap id="CweClusterVoResult" type="org.ruoyi.domain.vo.CweClusterVo">
+        <id property="id" column="id"/>
+        <result property="clusterId" column="cluster_id"/>
+        <result property="clusterMethod" column="cluster_method"/>
+        <result property="clusterNameZh" column="cluster_name_zh"/>
+        <result property="clusterNameEn" column="cluster_name_en"/>
+        <result property="categoryCode" column="category_code"/>
+        <result property="description" column="description"/>
+        <result property="keywords" column="keywords"/>
+        <result property="cweCount" column="cwe_count"/>
+        <result property="silhouetteScore" column="silhouette_score"/>
+        <result property="calinskiHarabaszScore" column="calinski_harabasz_score"/>
+        <result property="llmInterpretation" column="llm_interpretation"/>
+    </resultMap>
+
+    <select id="selectByClusterIdAndMethod" resultMap="CweClusterResult">
+        SELECT id, cluster_id, cluster_method, cluster_name_zh, cluster_name_en, 
+               category_code, description, keywords, cwe_count, 
+               silhouette_score, calinski_harabasz_score, llm_interpretation,
+               create_time, update_time, tenant_id
+        FROM cwe_cluster
+        WHERE cluster_id = #{clusterId} AND cluster_method = #{clusterMethod}
+    </select>
+
+    <select id="selectByClusterMethod" resultMap="CweClusterVoResult">
+        SELECT id, cluster_id, cluster_method, cluster_name_zh, cluster_name_en, 
+               category_code, description, keywords, cwe_count, 
+               silhouette_score, calinski_harabasz_score, llm_interpretation
+        FROM cwe_cluster
+        WHERE cluster_method = #{clusterMethod}
+        ORDER BY cluster_id ASC
+    </select>
+
+</mapper>

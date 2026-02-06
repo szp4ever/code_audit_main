@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.bo.StoreEmbeddingBo;
+import org.ruoyi.service.IAttachProcessService;
 import org.ruoyi.service.VectorStoreService;
 import org.ruoyi.service.strategy.VectorStoreStrategyFactory;
 import org.springframework.context.annotation.Primary;
@@ -44,6 +45,15 @@ public class VectorStoreServiceImpl implements VectorStoreService {
                 storeEmbeddingBo.getKid(), storeEmbeddingBo.getDocId(), storeEmbeddingBo.getChunkList().size());
         VectorStoreService strategy = getCurrentStrategy();
         strategy.storeEmbeddings(storeEmbeddingBo);
+    }
+
+    @Override
+    public void storeEmbeddings(StoreEmbeddingBo storeEmbeddingBo, IAttachProcessService attachProcessService) {
+        log.info("存储向量数据（带进度更新）: kid={}, docId={}, 数据条数={}, processId={}",
+                storeEmbeddingBo.getKid(), storeEmbeddingBo.getDocId(), 
+                storeEmbeddingBo.getChunkList().size(), storeEmbeddingBo.getProcessId());
+        VectorStoreService strategy = getCurrentStrategy();
+        strategy.storeEmbeddings(storeEmbeddingBo, attachProcessService);
     }
 
     @Override

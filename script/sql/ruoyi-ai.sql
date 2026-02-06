@@ -275,19 +275,19 @@ VALUES (1828324413241466881, '000000', 'vector', 'baai/bge-m3', NULL, 'baai/bge-
         2);
 INSERT INTO `chat_model`
 VALUES (1859570229117022211, '000000', 'chat', 'deepseek/deepseek-v3-0324', NULL, 'deepseek/deepseek-v3-0324', 0.1, '1',
-        '0', '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
+        '0', '', 'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
         '2025-05-24 17:56:22',
         'DeepSeek V3 0324 是深度求索（DeepSeek）团队旗舰级对话模型系列的最新版本，采用混合专家（Mixture-of-Experts, MoE）架构，参数量达685B参数。',
         5);
 INSERT INTO `chat_model`
 VALUES (1859570229117022212, '000000', 'chat', 'deepseek/deepseek-r1', NULL, 'deepseek/deepseek-r1', 0.1, '1', '0', '',
-        'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
+        'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
         '2025-05-24 17:56:14',
         'DeepSeek R1是DeepSeek团队发布的最新开源模型，具备非常强悍的推理性能，尤其在数学、编程和推理任务上达到了与OpenAI的o1模型相当的水平。',
         6);
 INSERT INTO `chat_model`
 VALUES (1930184891812147202, '000000', 'image', 'qwen/qwen2.5-vl-72b-instruct', NULL, 'qwen/qwen2.5-vl-72b-instruct',
-        0.003, '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1,
+        0.003, '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'sk-xx', NULL, 103, 1,
         '2025-06-04 16:48:34', 1, '2025-06-04 16:48:34', '视觉模型', 1);
 
 -- ----------------------------
@@ -741,12 +741,13 @@ CREATE TABLE `knowledge_fragment`
     `fid`         varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '知识片段ID',
     `idx`         int(11) NOT NULL COMMENT '片段索引下标',
     `content`     text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文档内容',
-    `create_dept` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部门',
-    `create_by`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
-    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `create_dept` bigint(20) NULL DEFAULT NULL COMMENT '创建部门',
+    `create_by`   bigint(20) NULL DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_by`   bigint(20) NULL DEFAULT NULL COMMENT '更新者',
-    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+    `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `remark`      varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+    `del_flag`    char(1) NULL DEFAULT '0' COMMENT '删除标志（0-存在 2-删除）',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1926124406994804743 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '知识片段' ROW_FORMAT = DYNAMIC;
 

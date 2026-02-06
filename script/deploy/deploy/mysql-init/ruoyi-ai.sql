@@ -205,19 +205,19 @@ VALUES (1828324413241466881, '000000', 'vector', 'baai/bge-m3', 'baai/bge-m3', 0
         2);
 INSERT INTO `chat_model`
 VALUES (1859570229117022211, '000000', 'chat', 'deepseek/deepseek-v3-0324', 'deepseek/deepseek-v3-0324', 0.1, '1', '0',
-        '', 'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
+        '', 'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
         '2025-05-24 17:56:22',
         'DeepSeek V3 0324 是深度求索（DeepSeek）团队旗舰级对话模型系列的最新版本，采用混合专家（Mixture-of-Experts, MoE）架构，参数量达685B参数。',
         5);
 INSERT INTO `chat_model`
 VALUES (1859570229117022212, '000000', 'chat', 'deepseek/deepseek-r1', 'deepseek/deepseek-r1', 0.1, '1', '0', '',
-        'https://api.ppinfra.com/v3/openai/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
+        'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'sk-xx', NULL, 103, 1, '2024-11-21 20:11:06', 1,
         '2025-05-24 17:56:14',
         'DeepSeek R1是DeepSeek团队发布的最新开源模型，具备非常强悍的推理性能，尤其在数学、编程和推理任务上达到了与OpenAI的o1模型相当的水平。',
         6);
 INSERT INTO `chat_model`
 VALUES (1930184891812147202, '000000', 'image', 'qwen/qwen2.5-vl-72b-instruct', 'qwen/qwen2.5-vl-72b-instruct', 0.003,
-        '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/chat/completions', 'xx', NULL, 103, 1, '2025-06-04 16:48:34',
+        '2', '0', NULL, 'https://api.ppinfra.com/v3/openai/v1/chat/completions', 'xx', NULL, 103, 1, '2025-06-04 16:48:34',
         1, '2025-06-04 16:48:34', '视觉模型', 1);
 
 -- ----------------------------
