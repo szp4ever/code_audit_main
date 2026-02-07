@@ -51,6 +51,31 @@
             <version>2.0.27</version>
         </dependency>
 
+        <!-- iText 7 PDF生成库 -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext7-core</artifactId>
+            <version>8.0.2</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>html2pdf</artifactId>
+            <version>5.0.2</version>
+        </dependency>
+        <!-- OpenHTML to PDF - HTML转PDF库 -->
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+        <!-- Velocity模板引擎 -->
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+            <version>2.3</version>
+        </dependency>
+
         <!-- ollama java sdk -->
         <dependency>
             <groupId>io.github.ollama4j</groupId>
@@ -121,6 +146,19 @@
         <dependency>
             <groupId>org.ruoyi</groupId>
             <artifactId>ruoyi-common-redis</artifactId>
+        </dependency>
+
+        <!-- GraalVM Polyglot for running highlight.js -->
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <version>25.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js</artifactId>
+            <version>25.0.2</version>
+            <type>pom</type>
         </dependency>
 
     </dependencies>

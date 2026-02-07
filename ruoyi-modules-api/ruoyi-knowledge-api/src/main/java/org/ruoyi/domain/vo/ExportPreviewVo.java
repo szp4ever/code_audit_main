@@ -54,4 +54,9 @@ public class ExportPreviewVo implements Serializable {
      * PDF预览HTML（可选）
      */
     private String previewHtml;
+
+    /**
+     * PDF格式类型：table（表格格式）或 report（报告格式）
+     */
+    private String pdfFormatType;
 }

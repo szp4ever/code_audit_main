@@ -79,4 +79,10 @@ public class ExportPreviewRequestBo implements Serializable {
      * 筛选条件（当exportRange为all时使用）
      */
     private KnowledgeItemBo filters;
+
+    /**
+     * 列宽配置（key为字段key，value为宽度，单位：像素）
+     * 用于Excel导出时设置列宽，对应前端预览表格的列宽
+     */
+    private Map<String, Integer> columnWidths;
 }

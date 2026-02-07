@@ -31,4 +31,10 @@ public class PdfOptionsBo implements Serializable {
      * 代码高亮
      */
     private Boolean codeHighlight;
+
+    /**
+     * PDF格式类型：report（报告格式）或 table（表格格式）
+     * 如果为空，则根据字段自动判断
+     */
+    private String formatType;
 }
