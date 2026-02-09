@@ -93,8 +93,25 @@ public class TaskManagement extends BaseEntity {
     @TableField(exist = false)
     private List<String> tags;
 
-    /** 关联的报告模板ID */
+    // 添加 getter 和 setter 方法
+    /** 关联的模板ID */
     private Long templateId;
+
+    public void setTemplateId(Long templateId)
+    {
+        this.templateId = templateId;
+    }
+
+    public Long getTemplateId()
+    {
+        return templateId;
+    }
+
+    // 如果您之前想显示模板名称，也可以加上这个（非必需，但推荐）
+    @TableField(exist = false)
+    private String templateName;
+    public void setTemplateName(String templateName) { this.templateName = templateName; }
+    public String getTemplateName() { return templateName; }
 }
 
 

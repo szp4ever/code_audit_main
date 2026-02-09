@@ -1,11 +1,14 @@
 package org.ruoyi.chat.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
 import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
 import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page; // 导入 MP 的 Page
+
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +18,7 @@ import java.util.Map;
  *
  * @author ruoyi
  */
+@Mapper
 public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
 
     /**
@@ -25,13 +29,7 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
      */
     TaskManagement selectTaskManagementById(Long id);
 
-    /**
-     * 查询任务列表（包含文件和标签）
-     *
-     * @param taskManagement 查询条件
-     * @return 任务列表
-     */
-    List<TaskManagement> selectTaskManagementList(TaskManagement taskManagement);
+    List<TaskManagement> selectTaskManagementList(@Param("page") Page<TaskManagement> page, @Param("task") TaskManagement task);
 
     /**
      * 插入任务

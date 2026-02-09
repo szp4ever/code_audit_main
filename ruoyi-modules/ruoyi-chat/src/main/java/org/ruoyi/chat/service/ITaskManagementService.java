@@ -23,7 +23,7 @@ public interface ITaskManagementService {
      */
     Long createTask(TaskManagement taskManagement);
 
-    void runAnalysisTask(Long taskId);
+
 
     /**
      * 查询任务列表

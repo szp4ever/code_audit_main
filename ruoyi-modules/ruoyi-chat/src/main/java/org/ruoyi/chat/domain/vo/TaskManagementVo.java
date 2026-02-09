@@ -111,4 +111,5 @@ public class TaskManagementVo implements Serializable {
      */
     @ExcelProperty(value = "关联模板名称")
     private String templateName;
+
 }

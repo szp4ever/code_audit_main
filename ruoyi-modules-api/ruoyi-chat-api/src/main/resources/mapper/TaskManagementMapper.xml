@@ -19,39 +19,43 @@
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
+        <result property="templateId" column="template_id"/>
+        <result property="templateName" column="template_name"/>
     </resultMap>
 
     <sql id="selectTaskManagementVo">
-        select id, title, description, priority, task_type, status, remark, 
-               create_dept, create_by, create_time, update_by, update_time, 
-               del_flag, tenant_id
-        from task_management
+        select t.id, t.title, t.description, t.priority, t.task_type, t.status, t.remark,
+               t.create_dept, t.create_by, t.create_time, t.update_by, t.update_time,
+               t.del_flag, t.tenant_id,
+               t.template_id,
+               st.template_name
+        from task_management t
+                 left join sys_template st on t.template_id = st.template_id
     </sql>
+
+    <select id="selectTaskManagementList" resultMap="TaskManagementResult">
+        <include refid="selectTaskManagementVo"/>
+        <where>
+            t.del_flag = '0'
+            <if test="task.status != null and task.status != ''">
+                and t.status = #{task.status}
+            </if>
+            <if test="task.priority != null and task.priority != ''">
+                and t.priority = #{task.priority}
+            </if>
+            <if test="task.taskType != null and task.taskType != ''">
+                and t.task_type = #{task.taskType}
+            </if>
+            <if test="task.title != null and task.title != ''">
+                and t.title like concat('%', #{task.title}, '%')
+            </if>
+        </where>
+        order by t.create_time desc
+    </select>
 
     <select id="selectTaskManagementById" parameterType="Long" resultMap="TaskManagementResult">
         <include refid="selectTaskManagementVo"/>
-        where id = #{id} and del_flag = '0'
-    </select>
-
-    <select id="selectTaskManagementList" parameterType="org.ruoyi.chat.domain.TaskManagement" 
-            resultMap="TaskManagementResult">
-        <include refid="selectTaskManagementVo"/>
-        <where>
-            del_flag = '0'
-            <if test="status != null and status != ''">
-                and status = #{status}
-            </if>
-            <if test="priority != null and priority != ''">
-                and priority = #{priority}
-            </if>
-            <if test="taskType != null and taskType != ''">
-                and task_type = #{taskType}
-            </if>
-            <if test="title != null and title != ''">
-                and title like concat('%', #{title}, '%')
-            </if>
-        </where>
-        order by create_time desc
+        where t.id = #{id} and t.del_flag = '0'
     </select>
 
     <insert id="insertTaskManagement" parameterType="org.ruoyi.chat.domain.TaskManagement" useGeneratedKeys="true" keyProperty="id">
@@ -66,6 +70,7 @@
             <if test="createDept != null">create_dept,</if>
             <if test="createBy != null">create_by,</if>
             <if test="tenantId != null">tenant_id,</if>
+            <if test="templateId != null">template_id,</if>
             create_time
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -78,6 +83,7 @@
             <if test="createDept != null">#{createDept},</if>
             <if test="createBy != null">#{createBy},</if>
             <if test="tenantId != null">#{tenantId},</if>
+            <if test="templateId != null">#{templateId},</if>
             sysdate()
         </trim>
     </insert>
@@ -91,6 +97,7 @@
             <if test="taskType != null and taskType != ''">task_type = #{taskType},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="remark != null">remark = #{remark},</if>
+            template_id = #{templateId},
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = sysdate()
         </trim>
@@ -101,125 +108,22 @@
         update task_management set del_flag = '1' where id = #{id}
     </delete>
 
-    <!-- 任务状态统计 -->
     <select id="selectStatusStats" resultType="java.util.HashMap">
-        SELECT 
-            status as `key`,
-            COUNT(*) as `value`
-        FROM task_management
-        WHERE del_flag = '0'
-        GROUP BY status
+        SELECT status as `key`, COUNT(*) as `value` FROM task_management WHERE del_flag = '0' GROUP BY status
     </select>
-
-    <!-- 任务类型统计 -->
     <select id="selectTypeStats" resultType="java.util.HashMap">
-        SELECT 
-            task_type as `key`,
-            COUNT(*) as `value`
-        FROM task_management
-        WHERE del_flag = '0'
-        GROUP BY task_type
+        SELECT task_type as `key`, COUNT(*) as `value` FROM task_management WHERE del_flag = '0' GROUP BY task_type
     </select>
-
-    <!-- 任务耗时统计 -->
     <select id="selectDurationStats" parameterType="String" resultType="org.ruoyi.chat.domain.vo.TaskDurationStatItem">
-        SELECT 
-            <choose>
-                <when test="timeRange == 'hour'">
-                    DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00') as date,
-                </when>
-                <when test="timeRange == 'week'">
-                    CONCAT(YEAR(create_time), '-W', LPAD(WEEK(create_time, 1), 2, '0')) as date,
-                </when>
-                <otherwise>
-                    DATE(create_time) as date,
-                </otherwise>
-            </choose>
-            AVG(TIMESTAMPDIFF(SECOND, create_time, 
-                CASE 
-                    WHEN status = 'completed' AND update_time IS NOT NULL 
-                    THEN update_time 
-                    ELSE NOW() 
-                END)) as avgDuration,
-            COUNT(*) as count
-        FROM task_management
-        WHERE del_flag = '0'
-        GROUP BY 
-            <choose>
-                <when test="timeRange == 'hour'">
-                    DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')
-                </when>
-                <when test="timeRange == 'week'">
-                    YEAR(create_time), WEEK(create_time, 1)
-                </when>
-                <otherwise>
-                    DATE(create_time)
-                </otherwise>
-            </choose>
-        ORDER BY date DESC
-        LIMIT 30
+        SELECT <choose><when test="timeRange == 'hour'">DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00') as date,</when><when test="timeRange == 'week'">CONCAT(YEAR(create_time), '-W', LPAD(WEEK(create_time, 1), 2, '0')) as date,</when><otherwise>DATE(create_time) as date,</otherwise></choose> AVG(TIMESTAMPDIFF(SECOND, create_time, CASE WHEN status = 'completed' AND update_time IS NOT NULL THEN update_time ELSE NOW() END)) as avgDuration, COUNT(*) as count FROM task_management WHERE del_flag = '0' GROUP BY <choose><when test="timeRange == 'hour'">DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')</when><when test="timeRange == 'week'">YEAR(create_time), WEEK(create_time, 1)</when><otherwise>DATE(create_time)</otherwise></choose> ORDER BY date DESC LIMIT 30
     </select>
-
-    <!-- 月度任务数量统计 -->
     <select id="selectTaskMonthlyCount" resultType="org.ruoyi.chat.domain.vo.TaskMonthlyCountItem">
-        SELECT
-        DATE_FORMAT(create_time, '%Y-%m') as month,
-        COUNT(*) as count,
-        task_type as type
-        FROM task_management
-        WHERE del_flag = '0'
-        <if test="startMonth != null and startMonth != '' and endMonth != null and endMonth != ''">
-            AND DATE_FORMAT(create_time, '%Y-%m') BETWEEN #{startMonth} AND #{endMonth}
-        </if>
-        GROUP BY DATE_FORMAT(create_time, '%Y-%m'), task_type
-        ORDER BY month ASC, task_type ASC
+        SELECT DATE_FORMAT(create_time, '%Y-%m') as month, COUNT(*) as count, task_type as type FROM task_management WHERE del_flag = '0' <if test="startMonth != null and startMonth != '' and endMonth != null and endMonth != ''"> AND DATE_FORMAT(create_time, '%Y-%m') BETWEEN #{startMonth} AND #{endMonth} </if> GROUP BY DATE_FORMAT(create_time, '%Y-%m'), task_type ORDER BY month ASC, task_type ASC
     </select>
-
     <select id="selectTaskQuarterlyStats" parameterType="string" resultType="org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem">
-        SELECT
-            CASE
-                WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1'
-                WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2'
-                WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3'
-                ELSE 'Q4'
-        END as quarter,
-            COUNT(*) as total,
-            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success,
-            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as fail,
-            ROUND(
-                IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*)),
-                2
-            ) as successRate,
-            ROUND(
-                IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*)),
-                2
-            ) as failRate
-        FROM task_management
-        WHERE
-            del_flag = '0'
-            AND DATE_FORMAT(create_time, '%Y') = #{year}
-        GROUP BY
-        CASE
-        WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1'
-        WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2'
-        WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3'
-        ELSE 'Q4'
-        END
-        ORDER BY quarter ASC
+        SELECT CASE WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1' WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2' WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3' ELSE 'Q4' END as quarter, COUNT(*) as total, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as success, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as fail, ROUND(IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) / COUNT(*)), 2) as successRate, ROUND(IF(COUNT(*) = 0, 0, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) / COUNT(*)), 2) as failRate FROM task_management WHERE del_flag = '0' AND DATE_FORMAT(create_time, '%Y') = #{year} GROUP BY CASE WHEN MONTH(create_time) BETWEEN 1 AND 3 THEN 'Q1' WHEN MONTH(create_time) BETWEEN 4 AND 6 THEN 'Q2' WHEN MONTH(create_time) BETWEEN 7 AND 9 THEN 'Q3' ELSE 'Q4' END ORDER BY quarter ASC
     </select>
-
     <select id="countTaskByStatus" resultType="java.lang.Integer">
-        SELECT COUNT(*)
-        FROM task_management
-        WHERE del_flag = '0'
-        <!-- 按传入的 status 筛选，#{status} 防止 SQL 注入 -->
-        AND status = #{status}
+        SELECT COUNT(*) FROM task_management WHERE del_flag = '0' AND status = #{status}
     </select>
-
 </mapper>
-
-
-
-
-
-
