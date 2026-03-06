@@ -1,5 +1,6 @@
 package org.ruoyi.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -168,5 +169,40 @@ public class ChatModelServiceImpl implements IChatModelService {
     @Override
     public ChatModel getPPT() {
         return baseMapper.selectOne(Wrappers.<ChatModel>lambdaQuery().eq(ChatModel::getModelName, "ppt"));
+    }
+
+    @Override
+    public ChatModelVo selectChatModelForKnowledgeExtraction() {
+        List<ChatModelVo> models = baseMapper.selectVoList(
+            Wrappers.<ChatModel>lambdaQuery()
+                .eq(ChatModel::getCategory, "chat")
+                .eq(ChatModel::getModelShow, "0")
+                .orderByDesc(ChatModel::getPriority)
+        );
+        if (CollUtil.isEmpty(models)) {
+            return null;
+        }
+        for (ChatModelVo model : models) {
+            if (isModelConfigValid(model)) {
+                return model;
+            }
+        }
+        return null;
+    }
+
+    private boolean isModelConfigValid(ChatModelVo modelVo) {
+        if (modelVo == null) {
+            return false;
+        }
+        if (StringUtils.isBlank(modelVo.getApiHost()) || StringUtils.isBlank(modelVo.getApiKey())) {
+            return false;
+        }
+        String apiKey = modelVo.getApiKey().trim().toLowerCase();
+        return !apiKey.equals("sk-xx")
+            && !apiKey.equals("sk-xxx")
+            && !apiKey.equals("your-api-key")
+            && !apiKey.equals("api-key")
+            && !apiKey.startsWith("sk-placeholder")
+            && !(apiKey.length() < 10 && apiKey.startsWith("sk-"));
     }
 }

@@ -38,6 +38,12 @@ public class KnowledgeFragmentVo implements Serializable {
     private String kid;
 
     /**
+     * 知识条目UUID（关联 knowledge_item.item_uuid）
+     */
+    @ExcelProperty(value = "条目UUID")
+    private String itemUuid;
+
+    /**
      * 文档ID
      */
     @ExcelProperty(value = "文档ID")
@@ -62,10 +68,71 @@ public class KnowledgeFragmentVo implements Serializable {
     private String content;
 
     /**
+     * 向量库UUID（Weaviate返回的向量ID，删除时必须使用此ID）
+     */
+    private String vectorId;
+
+    /**
+     * 漏洞类型（冗余字段，用于快速过滤）
+     */
+    private String vulnerabilityType;
+
+    /**
+     * 适用语言（冗余字段）
+     */
+    private String language;
+
+    /**
      * 备注
      */
     @ExcelProperty(value = "备注")
     private String remark;
 
+    /**
+     * 创建时间
+     */
+    @ExcelProperty(value = "创建时间")
+    private java.util.Date createTime;
+
+    /**
+     * 更新时间
+     */
+    @ExcelProperty(value = "更新时间")
+    private java.util.Date updateTime;
+
+    /**
+     * 创建人
+     */
+    private Long createBy;
+
+    /**
+     * 创建部门
+     */
+    private Long createDept;
+
+    /**
+     * 更新人
+     */
+    private Long updateBy;
+
+    /**
+     * 附件名称（关联查询）
+     */
+    private String docName;
+
+    /**
+     * 附件ID（关联查询，用于跳转）
+     */
+    private Long attachId;
+
+    /**
+     * 附件类型（关联查询）
+     */
+    private String docType;
+
+    /**
+     * 关联知识条目标题（关联查询，如果条目不存在则为null）
+     */
+    private String itemTitle;
 
 }

@@ -25,6 +25,13 @@ public class MybatisExceptionHandler {
     public R<Void> handleDuplicateKeyException(DuplicateKeyException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}',数据库中已存在记录'{}'", requestURI, e.getMessage());
+        
+        // 针对附件上传的重名错误，提供更友好的提示
+        String errorMessage = e.getMessage();
+        if (errorMessage != null && errorMessage.contains("idx_kname")) {
+            return R.fail("该知识库下已存在同名文件，请重命名后上传");
+        }
+        
         return R.fail("数据库中已存在该记录，请联系管理员确认");
     }
 

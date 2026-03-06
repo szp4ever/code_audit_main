@@ -4,6 +4,7 @@ package org.ruoyi.service;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.domain.bo.KnowledgeFragmentBo;
+import org.ruoyi.domain.vo.KnowledgeFragmentPageVo;
 import org.ruoyi.domain.vo.KnowledgeFragmentVo;
 
 import java.util.Collection;
@@ -26,6 +27,20 @@ public interface IKnowledgeFragmentService {
      * 查询知识片段列表
      */
     TableDataInfo<KnowledgeFragmentVo> queryPageList(KnowledgeFragmentBo bo, PageQuery pageQuery);
+
+    /**
+     * 查询知识片段列表（带分面统计）
+     */
+    default KnowledgeFragmentPageVo queryPageListWithFacetStats(KnowledgeFragmentBo bo, PageQuery pageQuery) {
+        TableDataInfo<KnowledgeFragmentVo> tableData = queryPageList(bo, pageQuery);
+        KnowledgeFragmentPageVo pageVo = new KnowledgeFragmentPageVo();
+        pageVo.setTotal(tableData.getTotal());
+        pageVo.setRows(tableData.getRows());
+        pageVo.setCode(tableData.getCode());
+        pageVo.setMsg(tableData.getMsg());
+        pageVo.setFacetStats(new java.util.HashMap<>());
+        return pageVo;
+    }
 
     /**
      * 查询知识片段列表

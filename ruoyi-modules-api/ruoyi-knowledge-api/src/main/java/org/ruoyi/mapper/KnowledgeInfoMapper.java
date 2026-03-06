@@ -23,4 +23,12 @@ public interface KnowledgeInfoMapper extends BaseMapperPlus<KnowledgeInfo, Knowl
      * @return KnowledgeInfo
      */
     KnowledgeInfo selectByKid(@Param("kid") String kid);
+
+    /**
+     * 根据kid查询知识库Vo
+     *
+     * @param kid 知识库id
+     * @return KnowledgeInfoVo
+     */
+    KnowledgeInfoVo selectVoByKid(@Param("kid") String kid);
 }

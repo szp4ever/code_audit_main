@@ -57,4 +57,9 @@ public class StoreEmbeddingBo {
      */
     private String baseUrl;
 
+    /**
+     * 处理任务ID（用于进度更新，可选）
+     */
+    private String processId;
+
 }

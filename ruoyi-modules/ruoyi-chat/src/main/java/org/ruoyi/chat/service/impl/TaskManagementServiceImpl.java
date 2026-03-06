@@ -162,28 +162,23 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
      */
     @Override
     public TableDataInfo<TaskManagementVo> selectTaskList(TaskManagement taskManagement, PageQuery pageQuery) {
-        LambdaQueryWrapper<TaskManagement> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ObjectUtil.isNotEmpty(taskManagement.getStatus()), TaskManagement::getStatus, taskManagement.getStatus())
-               .eq(ObjectUtil.isNotEmpty(taskManagement.getPriority()), TaskManagement::getPriority, taskManagement.getPriority())
-               .eq(ObjectUtil.isNotEmpty(taskManagement.getTaskType()), TaskManagement::getTaskType, taskManagement.getTaskType())
-               .eq(TaskManagement::getDelFlag, "0")
-               .orderByDesc(TaskManagement::getCreateTime);
+        // 1. 构建 MyBatis-Plus 的分页对象
+        Page<TaskManagement> page = pageQuery.build();
 
-        Page<TaskManagement> page = taskManagementMapper.selectPage(pageQuery.build(), wrapper);
-        
-        // 转换为VO并加载文件和标签
-        List<TaskManagementVo> voList = page.getRecords().stream().map(task -> {
-            TaskManagementVo vo = convertToVo(task);
-            // 加载文件
+        // 2. 调用 Mapper (传入 page 对象，MP 会自动处理分页 SQL)
+        List<TaskManagement> list = taskManagementMapper.selectTaskManagementList(page, taskManagement);
+
+        // 3. 转换 VO (这里记得加上您的 loadFiles 和 convertToVo 逻辑)
+        List<TaskManagementVo> voList = list.stream().map(task -> {
+            TaskManagementVo vo = convertToVo(task); // 这里面必须有 setTemplateName
             loadFiles(vo, task.getId());
-            // 加载标签
             vo.setTags(taskManagementTagMapper.selectTagsByTaskId(task.getId()));
             return vo;
         }).collect(Collectors.toList());
 
+        // 4. 🔥 直接从 page 对象获取 total，不需要 PageHelper
         return new TableDataInfo<>(voList, page.getTotal());
     }
-
     /**
      * 查询任务详情
      */
@@ -215,7 +210,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateTask(TaskManagement taskManagement) {
-        int result = taskManagementMapper.updateById(taskManagement);
+        int result = taskManagementMapper.updateTaskManagement(taskManagement);
         
         // 更新标签
         if (CollUtil.isNotEmpty(taskManagement.getTags())) {
@@ -285,6 +280,8 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         vo.setStatus(task.getStatus());
         vo.setCreatedAt(task.getCreateTime());
         vo.setUpdatedAt(task.getUpdateTime());
+        vo.setTemplateId(task.getTemplateId());
+        vo.setTemplateName(task.getTemplateName());
         return vo;
     }
 

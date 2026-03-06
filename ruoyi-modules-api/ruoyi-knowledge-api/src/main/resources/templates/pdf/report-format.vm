@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        @page {
+            size: A4;
+            margin: 36pt;
+            #if($includeHeaderFooter)
+            @top-center {
+                content: "$!{headerText}";
+                font-size: 9pt;
+                color: #666;
+                font-family: "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            }
+            @bottom-center {
+                content: #[[ "第 " counter(page) " 页 / 共 " counter(pages) " 页" ]]#;
+                font-size: 9pt;
+                color: #666;
+                font-family: "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            }
+            #end
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 100;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 300;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 350;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 400;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 500;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 700;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Sans CJK SC";
+            font-weight: 900;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Serif CJK SC";
+            font-weight: 400;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Noto Serif CJK SC";
+            font-weight: 700;
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "WenQuanYi Zen Hei";
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "SimSun";
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "SimHei";
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        @font-face {
+            font-family: "Microsoft YaHei";
+            -fs-pdf-font-embed: embed;
+            -fs-pdf-font-encoding: Identity-H;
+        }
+        body {
+            font-family: "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            background-color: #fafafa;
+            padding: 16px;
+            margin: 0;
+        }
+        .item-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-left: 4px solid #404040;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            page-break-inside: avoid;
+        }
+        .item-title {
+            color: #404040;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            line-height: 1.4;
+        }
+        .tags-container {
+            margin-bottom: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            display: inline-block;
+        }
+        .tag-severity {
+            color: #fff;
+            font-weight: 600;
+        }
+        .tag-language, .tag-vuln {
+            background-color: #f5f5f5;
+            color: #666;
+            border: 1px solid #d9d9d9;
+        }
+        .meta-section {
+            margin-bottom: 12px;
+        }
+        .meta-title {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #f5f5f5;
+            border: 1px solid #f5f5f5;
+            font-size: 9px;
+        }
+        .meta-table td {
+            padding: 6px 8px;
+            border: 0.5px solid #e5e5e5;
+        }
+        .meta-table td:first-child {
+            width: 40%;
+            color: #666;
+        }
+        .meta-table td:last-child {
+            width: 60%;
+            color: #333;
+        }
+        .content-section {
+            margin-bottom: 12px;
+        }
+        .content-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .content-divider {
+            border-top: 1px solid #e5e5e5;
+            margin-bottom: 8px;
+        }
+        .content-text {
+            color: #333;
+            font-size: 10px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .content-code {
+            background-color: #f8f8f8;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 0;
+            font-size: 10px;
+            line-height: 1.5;
+            overflow-x: auto;
+            white-space: pre;
+            font-family: "Courier New", "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", monospace, sans-serif;
+        }
+        .content-code pre {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            font-family: "Courier New", "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", monospace, sans-serif;
+        }
+        .content-code code {
+            font-family: "Courier New", "Noto Sans CJK SC", "Noto Serif CJK SC", "WenQuanYi Zen Hei", "SimSun", "SimHei", "Microsoft YaHei", monospace, sans-serif;
+        }
+        .content-code .hljs {
+            background: #f8f8f8;
+            color: #333;
+        }
+        .content-code .hljs-keyword {
+            color: #0000ff;
+            font-weight: bold;
+        }
+        .content-code .hljs-string {
+            color: #008000;
+        }
+        .content-code .hljs-comment {
+            color: #808080;
+            font-style: italic;
+        }
+        .content-code .hljs-number {
+            color: #0000ff;
+        }
+        .content-code .hljs-function {
+            color: #795e26;
+        }
+        .content-code .hljs-variable {
+            color: #001080;
+        }
+        .tags-section {
+            margin-bottom: 12px;
+        }
+        .tag-item {
+            background-color: #f6ffed;
+            color: #52c41a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            border: 1px solid #52c41a;
+            display: inline-block;
+            margin-right: 6px;
+            margin-bottom: 4px;
+        }
+        .footer-info {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f5f5f5;
+            color: #999;
+            font-size: 9px;
+        }
+        .toc-container {
+            page-break-after: always;
+            margin-bottom: 20px;
+        }
+        .toc-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #404040;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #404040;
+        }
+        .toc-item {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            font-size: 11px;
+            color: #333;
+            line-height: 1.6;
+        }
+        .toc-item a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .toc-item a:hover {
+            text-decoration: underline;
+        }
+        .toc-item-number {
+            color: #666;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+#if($includeTOC && $tocItems && $tocItems.size() > 0)
+    <div class="toc-container" style="page-break-after: always;">
+        <div class="toc-title">目录</div>
+        #foreach($tocItem in $tocItems)
+            <div class="toc-item">
+                <span class="toc-item-number">$tocItem.index.</span>
+                <a href="#$tocItem.anchor">$utils.escapeHtml($tocItem.title)</a>
+            </div>
+        #end
+    </div>
+#end
+#foreach($item in $items)
+    #set($index = $foreach.index + 1)
+    #set($severity = $item.severity)
+    #if(!$severity && $item.cvssScore)
+        #set($severity = $utils.mapSeverityByScore($item.cvssScore))
+    #end
+    #set($borderColor = "#404040")
+    #set($severityColor = $utils.getSeverityColor($severity))
+    <div class="item-card" id="item-$index">
+        #set($title = $item.title)
+        #if(!$title || $title == "")
+            #set($title = "条目 " + $index)
+        #end
+        <h3 class="item-title">$index. $utils.escapeHtml($title)</h3>
+        <div class="tags-container">
+            #if($severity && $severity != "")
+                #set($severityLabel = $dictService.getDictLabel("knowledge_severity", $severity))
+                <span class="tag tag-severity" style="background-color: $severityColor;">$utils.escapeHtml($severityLabel)</span>
+            #end
+            #if($item.language && $item.language != "")
+                #set($languageLabel = $dictService.getDictLabel("knowledge_language", $item.language))
+                <span class="tag tag-language">$utils.escapeHtml($languageLabel)</span>
+            #end
+            #if($item.vulnerabilityTypes && $item.vulnerabilityTypes.size() > 0)
+                #foreach($vulnType in $item.vulnerabilityTypes)
+                    #if($cweMap && $cweMap.containsKey($vulnType))
+                        #set($cwe = $cweMap.get($vulnType))
+                        #set($vulnName = $cwe.nameZh)
+                        #if(!$vulnName || $vulnName == "")
+                            #set($vulnName = $cwe.nameEn)
+                        #end
+                        #if($vulnName.length() > 25)
+                            #set($vulnName = $vulnName.substring(0, 25) + "...")
+                        #end
+                        <span class="tag tag-vuln">$utils.escapeHtml($vulnName)</span>
+                    #end
+                #end
+            #end
+        </div>
+        #set($basicMeta = {})
+        #set($cvssMeta = {})
+        #foreach($fieldInfo in $fieldInfos)
+            #set($key = $fieldInfo.key)
+            #if($key != "title" && $key != "summary" && $key != "problemDescription" && $key != "fixSolution" && $key != "exampleCode")
+                #set($value = $utils.getFieldValue($item, $key, $cweMap, $tagMap, $userMap, $knowledgeBaseMap, $fieldFormats))
+                #if($value && $value != "" && $value != "null")
+                    #if($key.startsWith("cvss") || $key == "cvssScore")
+                        #set($dummy = $cvssMeta.put($fieldInfo.label, $value))
+                    #elseif($key != "createTime" && $key != "updateTime" && $key != "createBy" && $key != "updateBy" && $key != "createByName" && $key != "updateByName" && $key != "kid" && $key != "tags")
+                        #set($dummy = $basicMeta.put($fieldInfo.label, $value))
+                    #end
+                #end
+            #end
+        #end
+        #if($basicMeta.size() > 0 || $cvssMeta.size() > 0)
+            <div class="meta-section">
+                #if($basicMeta.size() > 0)
+                    <div style="margin-bottom: 8px;">
+                        <div class="meta-title">基本信息</div>
+                        <table class="meta-table">
+                            #foreach($entry in $basicMeta.entrySet())
+                                <tr>
+                                    <td>$utils.escapeHtml($entry.key):</td>
+                                    <td>$utils.escapeHtml($entry.value)</td>
+                                </tr>
+                            #end
+                        </table>
+                    </div>
+                #end
+                #if($cvssMeta.size() > 0)
+                    <div style="margin-bottom: 8px;">
+                        <div class="meta-title">CVSS评分</div>
+                        <table class="meta-table">
+                            #set($colIndex = 0)
+                            #foreach($entry in $cvssMeta.entrySet())
+                                #if($colIndex % 6 == 0)
+                                    #if($colIndex > 0)
+                                        </tr>
+                                    #end
+                                    <tr>
+                                #end
+                                <td>$utils.escapeHtml($entry.key):</td>
+                                <td>$utils.escapeHtml($entry.value)</td>
+                                #set($colIndex = $colIndex + 2)
+                            #end
+                            #if($colIndex > 0)
+                                </tr>
+                            #end
+                        </table>
+                    </div>
+                #end
+            </div>
+        #end
+        #foreach($fieldInfo in $fieldInfos)
+            #set($key = $fieldInfo.key)
+            #if($key != "title" && ($key == "summary" || $key == "problemDescription" || $key == "fixSolution" || $key == "exampleCode"))
+                #set($value = $utils.getFieldValue($item, $key, $cweMap, $tagMap, $userMap, $knowledgeBaseMap, $fieldFormats))
+                #if($value && $value != "" && $value != "null")
+                    <div class="content-section">
+                        <div class="content-title">$utils.escapeHtml($fieldInfo.label)</div>
+                        <div class="content-divider"></div>
+                        #if($key == "exampleCode")
+                            #if($codeHighlight && $highlightJsService)
+                                #set($language = $item.language)
+                                #if(!$language || $language == "")
+                                    #set($language = "text")
+                                #end
+                                #set($highlightedCode = $highlightJsService.highlight($value, $language))
+                                <div class="content-code">$highlightedCode</div>
+                            #else
+                                <pre class="content-code">$utils.escapeHtml($value)</pre>
+                            #end
+                        #else
+                            <div class="content-text">$utils.escapeHtml($value)</div>
+                        #end
+                    </div>
+                #end
+            #end
+        #end
+        #if($item.tags && $item.tags.size() > 0)
+            <div class="tags-section">
+                <div class="content-title">标签</div>
+                <div class="content-divider"></div>
+                <div>
+                    #foreach($tagName in $item.tags)
+                        <span class="tag-item">$utils.escapeHtml($tagName)</span>
+                    #end
+                </div>
+            </div>
+        #end
+        #set($footerInfo = [])
+        #foreach($fieldInfo in $fieldInfos)
+            #set($key = $fieldInfo.key)
+            #if($key == "createTime" && $item.createTime)
+                #set($dummy = $footerInfo.add("创建时间：" + $utils.formatDateTime($item.createTime)))
+            #elseif($key == "updateTime" && $item.updateTime)
+                #set($dummy = $footerInfo.add("更新时间：" + $utils.formatDateTime($item.updateTime)))
+            #elseif(($key == "createBy" || $key == "createByName") && $item.createBy && $userMap)
+                #set($creator = $userMap.get($item.createBy))
+                #if($creator && $creator != "")
+                    #set($dummy = $footerInfo.add("创建人：" + $creator))
+                #end
+            #elseif(($key == "updateBy" || $key == "updateByName") && $item.updateBy && $userMap)
+                #set($updater = $userMap.get($item.updateBy))
+                #if($updater && $updater != "")
+                    #set($dummy = $footerInfo.add("更新人：" + $updater))
+                #end
+            #elseif($key == "kid" && $item.kid && $item.kid != "" && $knowledgeBaseMap)
+                #set($kbName = $knowledgeBaseMap.get($item.kid))
+                #if($kbName && $kbName != "")
+                    #set($dummy = $footerInfo.add("知识库：" + $kbName))
+                #end
+            #end
+        #end
+        #if($footerInfo.size() > 0)
+            <div class="footer-info">$utils.join($footerInfo, " | ")</div>
+        #end
+    </div>
+#end
+</body>
+</html>

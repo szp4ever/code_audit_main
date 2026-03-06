@@ -1,12 +1,14 @@
 package org.ruoyi.chain.loader;
 
+import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.ruoyi.chain.split.TextSplitter;
+import org.ruoyi.common.core.exception.UtilException;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -15,18 +17,21 @@ import java.util.List;
 @AllArgsConstructor
 @Slf4j
 public class WordLoader implements ResourceLoader {
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
     private final TextSplitter textSplitter;
 
     @Override
     public String getContent(InputStream inputStream) {
-        XWPFDocument document = null;
-        try {
-            document = new XWPFDocument(inputStream);
-            XWPFWordExtractor extractor = new XWPFWordExtractor(document);
-            String content = extractor.getText();
-            return content;
+        try (InputStream bufferedStream = new BufferedInputStream(inputStream, DEFAULT_BUFFER_SIZE)) {
+            ApacheTikaDocumentParser apacheTikaDocumentParser = new ApacheTikaDocumentParser();
+            Document document = apacheTikaDocumentParser.parse(bufferedStream);
+            return document.text();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            String errorMsg = "Word文件流读取失败";
+            throw new UtilException(errorMsg, e);
+        } catch (RuntimeException e) {
+            String errorMsg = "Word内容解析异常";
+            throw new UtilException(errorMsg, e);
         }
     }
 

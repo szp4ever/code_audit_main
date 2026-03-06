@@ -108,7 +108,16 @@ public class OpenAiStreamClient {
         if (StrUtil.isBlank(builder.apiHost)) {
             builder.apiHost = OpenAIConst.OPENAI_HOST;
         }
-        apiHost = builder.apiHost;
+        String normalizedHost = builder.apiHost;
+        System.out.println("[OpenAiStreamClient初始化] apiHost原始值: " + builder.apiHost);
+        // 如果URL已经包含完整的端点路径（如 /chat/completions 或 /v1/chat/completions），则不添加斜杠
+        // 否则作为baseURL使用，需要添加斜杠
+        boolean isFullEndpoint = normalizedHost.matches(".*/(v\\d+/)?chat/completions$");
+        if (!normalizedHost.endsWith("/") && !isFullEndpoint) {
+            normalizedHost = normalizedHost + "/";
+        }
+        apiHost = normalizedHost;
+        System.out.println("[OpenAiStreamClient初始化] apiHost处理后值: " + apiHost);
 
         if (StrUtil.isBlank(builder.apiUrl)) {
             builder.apiUrl = OpenAIConst.apiUrl;
@@ -131,21 +140,34 @@ public class OpenAiStreamClient {
         if (Objects.isNull(builder.okHttpClient)) {
             builder.okHttpClient = this.okHttpClient();
         } else {
-            //自定义的okhttpClient  需要增加api keys
             builder.okHttpClient = builder.okHttpClient
                     .newBuilder()
                     .addInterceptor(authInterceptor)
                     .build();
         }
         okHttpClient = builder.okHttpClient;
-        if (apiHost.endsWith("/")) {
-            this.openAiApi = new Retrofit.Builder()
-                    .baseUrl(apiHost)
-                    .client(okHttpClient)
-                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-                    .addConverterFactory(JacksonConverterFactory.create())
-                    .build().create(OpenAiApi.class);
+        // Retrofit要求baseUrl必须以/结尾
+        // 如果apiHost是完整端点URL，提取基础部分作为Retrofit的baseUrl
+        String retrofitBaseUrl = apiHost;
+        if (isFullEndpoint) {
+            // 从完整端点URL中提取基础URL，例如：
+            // https://api.ppinfra.com/v3/openai/v1/chat/completions -> https://api.ppinfra.com/v3/openai/
+            // 匹配 /v1/chat/completions 或 /chat/completions，然后提取之前的部分
+            String pattern = "/(v\\d+/)?chat/completions$";
+            retrofitBaseUrl = apiHost.replaceFirst(pattern, "/");
+            if (!retrofitBaseUrl.endsWith("/")) {
+                retrofitBaseUrl = retrofitBaseUrl + "/";
+            }
+        } else if (!retrofitBaseUrl.endsWith("/")) {
+            retrofitBaseUrl = retrofitBaseUrl + "/";
         }
+        System.out.println("[OpenAiStreamClient初始化] Retrofit baseUrl: " + retrofitBaseUrl);
+        this.openAiApi = new Retrofit.Builder()
+                .baseUrl(retrofitBaseUrl)
+                .client(okHttpClient)
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addConverterFactory(JacksonConverterFactory.create())
+                .build().create(OpenAiApi.class);
 
     }
 
@@ -170,9 +192,9 @@ public class OpenAiStreamClient {
         OkHttpClient okHttpClient = new OkHttpClient
                 .Builder()
                 .addInterceptor(this.authInterceptor)
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(50, TimeUnit.SECONDS)
-                .readTimeout(50, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(120, TimeUnit.SECONDS)
+                .readTimeout(300, TimeUnit.SECONDS)
                 .build();
         return okHttpClient;
     }
@@ -305,12 +327,36 @@ public class OpenAiStreamClient {
      * @return 答案
      */
     public <T extends BaseChatCompletion> ChatCompletionResponse chatCompletion(T chatCompletion) {
-        if (chatCompletion instanceof ChatCompletion) {
-            Single<ChatCompletionResponse> chatCompletionResponse = this.openAiApi.chatCompletion((ChatCompletion) chatCompletion);
-            return chatCompletionResponse.blockingGet();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            String requestBody = mapper.writeValueAsString(chatCompletion);
+            String requestUrl = this.apiHost;
+            System.out.println("[chatCompletion] LLM API请求URL: " + requestUrl);
+            System.out.println("[chatCompletion] LLM API请求体长度: " + requestBody.length() + " 字符");
+            Request request = new Request.Builder()
+                    .url(requestUrl)
+                    .post(RequestBody.create(MediaType.parse(ContentType.JSON.getValue()), requestBody))
+                    .build();
+            try (Response response = this.okHttpClient.newCall(request).execute()) {
+                System.out.println("[chatCompletion] LLM API响应状态码: " + response.code());
+                if (!response.isSuccessful()) {
+                    String errorBody = response.body() != null ? response.body().string() : "Unknown error";
+                    throw new BaseException("LLM API调用失败: HTTP " + response.code() + " - " + errorBody);
+                }
+                ResponseBody responseBody = response.body();
+                if (responseBody == null) {
+                    throw new BaseException("LLM API响应为空");
+                }
+                String responseText = responseBody.string();
+                return mapper.readValue(responseText, ChatCompletionResponse.class);
+            }
+        } catch (IOException e) {
+            log.error("LLM API请求异常: {}", e.getMessage(), e);
+            throw new BaseException("LLM API请求异常: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("LLM API响应解析异常: {}", e.getMessage(), e);
+            throw new BaseException("LLM API响应解析异常: " + e.getMessage());
         }
-        Single<ChatCompletionResponse> chatCompletionResponse = this.openAiApi.chatCompletionWithPicture((ChatCompletionWithPicture) chatCompletion);
-        return chatCompletionResponse.blockingGet();
     }
 
     /**
