@@ -175,6 +175,21 @@
         ORDER BY month ASC, task_type ASC
     </select>
 
+    <!-- 年度任务数量统计（替换原月度统计） -->
+    <select id="selectTaskYearlyCount" resultType="org.ruoyi.chat.domain.vo.TaskYearlyCountItem">
+        SELECT
+        DATE_FORMAT(create_time, '%Y') as year,
+        COUNT(*) as count,
+        task_type as type
+        FROM task_management
+        WHERE del_flag = '0'
+        <if test="startYear != null and startYear != '' and endYear != null and endYear != ''">
+            AND DATE_FORMAT(create_time, '%Y') BETWEEN #{startYear} AND #{endYear}
+        </if>
+        GROUP BY DATE_FORMAT(create_time, '%Y'), task_type
+        ORDER BY year ASC, task_type ASC
+    </select>
+
     <select id="selectTaskQuarterlyStats" parameterType="string" resultType="org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem">
         SELECT
             CASE
@@ -207,6 +222,8 @@
         END
         ORDER BY quarter ASC
     </select>
+
+
 
     <select id="countTaskByStatus" resultType="java.lang.Integer">
         SELECT COUNT(*)

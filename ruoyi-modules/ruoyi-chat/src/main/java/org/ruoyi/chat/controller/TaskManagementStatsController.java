@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
 import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
+import org.ruoyi.chat.domain.vo.TaskYearlyCountItem;
 import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
 import org.ruoyi.chat.domain.vo.TaskRealTimeCountVO;
 import org.ruoyi.chat.service.ITaskManagementService;
@@ -63,6 +64,21 @@ public class TaskManagementStatsController extends BaseController {
         return R.ok(stats);
     }
 
+    /**
+     * 年度任务数量统计
+     */
+    @Operation(summary = "获取年度任务数量统计")
+    @GetMapping("/yearlycount")  // 接口路径从 monthlycount 改为 yearlycount
+    public R<List<TaskYearlyCountItem>> getYearlyCount(
+
+            // 参数名从 startMonth/endMonth 改为 startYear/endYear，语义更清晰
+            @RequestParam(value = "start", required = false) String startYear,
+            @RequestParam(value = "end", required = false) String endYear) {
+
+        // 调用服务层的年度统计方法（需同步修改服务层）
+        List<TaskYearlyCountItem> yearlyCount = taskManagementService.getTaskYearlyCount(startYear, endYear);
+        return R.ok(yearlyCount);
+    }
     /**
      * 月度任务数量统计
      */

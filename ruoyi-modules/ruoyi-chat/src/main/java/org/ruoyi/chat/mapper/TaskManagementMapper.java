@@ -6,6 +6,7 @@ import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
 import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
 import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
+import org.ruoyi.chat.domain.vo.TaskYearlyCountItem;
 
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,15 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
      * @return
      */
     List<TaskQuarterlyStatsItem> selectTaskQuarterlyStats(@Param("year") String year);
+
+    /**
+     * 年度信息统计
+     * @param startYear
+     * @param endYear
+     * @return
+     */
+    List<TaskYearlyCountItem> selectTaskYearlyCount(@Param("startYear") String startYear, @Param("endYear") String endYear);
+
 
     /**
      * 按任务状态统计任务数量

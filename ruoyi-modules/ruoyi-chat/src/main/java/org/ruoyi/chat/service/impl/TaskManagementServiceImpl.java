@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -437,6 +438,43 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         return taskManagementMapper.selectTaskQuarterlyStats(year);
     }
 
+    /**
+     * 年度任务统计实现
+     */
+    @Override
+    public List<TaskYearlyCountItem> getTaskYearlyCount(String startYear, String endYear) {
+        // 1. 参数兜底：防止传入 null 或空字符串，保证后续查询不会出现异常
+        if (startYear == null || startYear.trim().isEmpty()) {
+            // 兜底：默认取当前年的前5年（和前端默认近5年范围一致，格式 YYYY）
+            LocalDate now = LocalDate.now();
+            startYear = String.valueOf(now.minusYears(5).getYear());
+        }
+        // 2. 参数格式验证（保证是 YYYY 格式，避免无效查询）
+        DateTimeFormatter yearFormatter = DateTimeFormatter.ofPattern("yyyy");
+        try {
+            // 验证年份格式：解析为4位年份
+            LocalDate.parse(startYear + "-01-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate.parse(endYear + "-01-01", DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } catch (DateTimeParseException e) {
+            // 格式无效时，重置为默认范围（前5年 → 当前年）
+            LocalDate now = LocalDate.now();
+            startYear = String.valueOf(now.minusYears(5).getYear());
+            endYear = String.valueOf(now.getYear());
+        }
+
+        // 3. 保证开始年份不晚于结束年份（避免查询逻辑异常）
+        LocalDate startDate = LocalDate.parse(startYear + "-01-01");
+        LocalDate endDate = LocalDate.parse(endYear + "-01-01");
+        if (startDate.isAfter(endDate)) {
+            // 交换开始和结束年份，保证查询范围有效
+            String temp = startYear;
+            startYear = endYear;
+            endYear = temp;
+        }
+
+        // 4. 调用 Mapper 层方法，传递处理后的合法参数，查询年度统计数据
+        return taskManagementMapper.selectTaskYearlyCount(startYear, endYear);
+    }
     /**
      * 获取任务实时数量统计
      */

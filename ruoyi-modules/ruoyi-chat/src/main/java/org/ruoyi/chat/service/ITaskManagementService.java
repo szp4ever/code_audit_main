@@ -99,6 +99,13 @@ public interface ITaskManagementService {
      */
     List<TaskMonthlyCountItem> getTaskMonthlyCount(String startMonth, String endMonth);
 
+    /**年度任务统计方法（替换/新增）
+     *
+     * @param startYear
+     * @param endYear
+     * @return
+     */
+    List<TaskYearlyCountItem> getTaskYearlyCount(String startYear, String endYear);
     /**
      * 获取季度任务数量
      */
