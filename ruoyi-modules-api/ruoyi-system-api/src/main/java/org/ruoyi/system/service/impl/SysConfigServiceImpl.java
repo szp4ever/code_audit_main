@@ -17,6 +17,7 @@ import org.ruoyi.common.tenant.helper.TenantHelper;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.SysConfig;
+import org.ruoyi.system.domain.bo.SecurityConfigBo;
 import org.ruoyi.system.domain.bo.SysConfigBo;
 import org.ruoyi.system.domain.vo.SysConfigVo;
 import org.ruoyi.system.mapper.SysConfigMapper;
@@ -199,6 +200,102 @@ public class SysConfigServiceImpl implements ISysConfigService {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 获取安全配置
+     *
+     * @return 安全配置信息
+     */
+    @Override
+    public SecurityConfigBo getSecurityConfig() {
+        SecurityConfigBo bo = new SecurityConfigBo();
+        
+        // 获取白名单IP配置
+        String whitelistIps = selectConfigByKey("sys.ip");
+        bo.setWhitelistIps(StringUtils.isNotBlank(whitelistIps) ? whitelistIps : "");
+        
+        // 获取空闲超时分钟数配置
+        String idleTimeoutStr = selectConfigByKey("sys.timeout");
+        try {
+            bo.setIdleTimeoutMinutes(StringUtils.isNotBlank(idleTimeoutStr) ? Integer.parseInt(idleTimeoutStr) : 0);
+        } catch (NumberFormatException e) {
+            bo.setIdleTimeoutMinutes(0);
+        }
+        
+        // 获取密码最小长度配置
+        String passwordMinLengthStr = selectConfigByKey("sys.codelength");
+        try {
+            bo.setPasswordMinLength(StringUtils.isNotBlank(passwordMinLengthStr) ? Integer.parseInt(passwordMinLengthStr) : 0);
+        } catch (NumberFormatException e) {
+            bo.setPasswordMinLength(0);
+        }
+        
+        // 获取密码是否需要特殊字符配置
+        String passwordRequireSpecialStr = selectConfigByKey("sys.mark");
+        try {
+            bo.setPasswordRequireSpecial(StringUtils.isNotBlank(passwordRequireSpecialStr) ? Integer.parseInt(passwordRequireSpecialStr) : 0);
+        } catch (NumberFormatException e) {
+            bo.setPasswordRequireSpecial(0);
+        }
+        
+        return bo;
+    }
+
+    /**
+     * 更新安全配置
+     *
+     * @param bo 安全配置信息
+     */
+    @Override
+    public void updateSecurityConfig(SecurityConfigBo bo) {
+        // 更新白名单IP配置
+        if (bo.getWhitelistIps() != null) {
+            saveOrUpdateConfig("sys.ip", bo.getWhitelistIps(), "白名单IP");
+        }
+        
+        // 更新空闲超时分钟数配置
+        if (bo.getIdleTimeoutMinutes() != null) {
+            saveOrUpdateConfig("sys.timeout", String.valueOf(bo.getIdleTimeoutMinutes()), "空闲超时分钟数");
+        }
+        
+        // 更新密码最小长度配置
+        if (bo.getPasswordMinLength() != null) {
+            saveOrUpdateConfig("sys.codelength", String.valueOf(bo.getPasswordMinLength()), "密码最小长度");
+        }
+        
+        // 更新密码是否需要特殊字符配置
+        if (bo.getPasswordRequireSpecial() != null) {
+            saveOrUpdateConfig("sys.mark", String.valueOf(bo.getPasswordRequireSpecial()), "密码是否需要特殊字符");
+        }
+    }
+
+    /**
+     * 保存或更新配置
+     *
+     * @param configKey 配置键
+     * @param configValue 配置值
+     * @param configName 配置名称
+     */
+    private void saveOrUpdateConfig(String configKey, String configValue, String configName) {
+        SysConfig config = baseMapper.selectOne(new LambdaQueryWrapper<SysConfig>()
+                .eq(SysConfig::getConfigKey, configKey));
+        
+        if (ObjectUtil.isNotNull(config)) {
+            // 更新现有配置
+            config.setConfigValue(configValue);
+            baseMapper.updateById(config);
+            // 清除缓存
+            CacheUtils.evict(CacheNames.SYS_CONFIG, configKey);
+        } else {
+            // 新增配置
+            SysConfig newConfig = new SysConfig();
+            newConfig.setConfigKey(configKey);
+            newConfig.setConfigValue(configValue);
+            newConfig.setConfigName(configName);
+            newConfig.setConfigType("N"); // 非系统内置
+            baseMapper.insert(newConfig);
+        }
     }
 
 }

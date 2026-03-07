@@ -2,6 +2,7 @@ package org.ruoyi.system.service;
 
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
+import org.ruoyi.system.domain.bo.SecurityConfigBo;
 import org.ruoyi.system.domain.bo.SysConfigBo;
 import org.ruoyi.system.domain.vo.SysConfigVo;
 
@@ -84,5 +85,19 @@ public interface ISysConfigService {
      * @return 结果
      */
     boolean checkConfigKeyUnique(SysConfigBo config);
+
+    /**
+     * 获取安全配置
+     *
+     * @return 安全配置信息
+     */
+    SecurityConfigBo getSecurityConfig();
+
+    /**
+     * 更新安全配置
+     *
+     * @param bo 安全配置信息
+     */
+    void updateSecurityConfig(SecurityConfigBo bo);
 
 }

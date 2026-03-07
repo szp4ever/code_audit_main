@@ -120,6 +120,12 @@ public class SysOperLogBo {
     private Long costTime;
 
     /**
+     * 关键字（用于对多个字段进行模糊查询）
+     * 非表字段，仅作为查询条件使用
+     */
+    private String keyword;
+
+    /**
      * 请求参数
      */
     private Map<String, Object> params = new HashMap<>();

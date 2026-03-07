@@ -9,9 +9,11 @@ import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
 import org.ruoyi.chat.domain.vo.TaskYearlyCountItem;
 import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
 import org.ruoyi.chat.domain.vo.TaskRealTimeCountVO;
+import org.ruoyi.system.domain.vo.UserOperationHeatmapItem;
 import org.ruoyi.chat.service.ITaskManagementService;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
+import org.ruoyi.system.service.ISysOperLogService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +34,7 @@ import java.util.Map;
 public class TaskManagementStatsController extends BaseController {
 
     private final ITaskManagementService taskManagementService;
+    private final ISysOperLogService sysOperLogService;
 
     /**
      * 获取任务状态统计
@@ -114,6 +117,26 @@ public class TaskManagementStatsController extends BaseController {
         // 返回前端（R 是项目统一返回结果封装，保持原有风格）
 //        System.out.println( realTimeCountVO );
         return R.ok(realTimeCountVO);
+    }
+
+    /**
+     * 获取用户操作热力图数据
+     */
+    @Operation(summary = "获取用户操作热力图数据")
+    @GetMapping("/stats/user-operation-heatmap")
+    public R<List<UserOperationHeatmapItem>> getUserOperationHeatmap(
+            @RequestParam(value = "timeRange", required = false, defaultValue = "week") String timeRange,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate) {
+        try {
+            log.info("接收到热力图数据请求 - timeRange: {}, startDate: {}, endDate: {}", timeRange, startDate, endDate);
+            List<UserOperationHeatmapItem> result = sysOperLogService.getUserOperationHeatmap(timeRange, startDate, endDate);
+            log.info("返回热力图数据，共 {} 条", result != null ? result.size() : 0);
+            return R.ok(result);
+        } catch (Exception e) {
+            log.error("获取用户操作热力图数据失败", e);
+            return R.fail("获取热力图数据失败: " + e.getMessage());
+        }
     }
 }
 

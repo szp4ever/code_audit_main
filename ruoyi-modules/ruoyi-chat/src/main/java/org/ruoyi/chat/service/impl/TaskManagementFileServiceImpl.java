@@ -14,8 +14,6 @@ import org.ruoyi.common.oss.core.OssClient;
 import org.ruoyi.common.oss.entity.UploadResult;
 import org.ruoyi.common.oss.factory.OssFactory;
 import org.ruoyi.common.oss.properties.OssProperties;
-import org.ruoyi.common.core.utils.file.FileUtils;
-import org.ruoyi.common.core.utils.file.MimeTypeUtils;
 import org.ruoyi.common.redis.utils.CacheUtils;
 import org.ruoyi.common.redis.utils.RedisUtils;
 import org.springframework.stereotype.Service;
@@ -130,27 +128,6 @@ public class TaskManagementFileServiceImpl implements ITaskManagementFileService
         
         if (files == null || files.length == 0) {
             throw new RuntimeException("文件列表不能为空");
-        }
-        
-        // 验证所有文件是否为代码文件类型
-        List<String> invalidFiles = new java.util.ArrayList<>();
-        for (MultipartFile file : files) {
-            if (file != null && !file.isEmpty()) {
-                String filename = file.getOriginalFilename();
-                if (filename != null && !FileUtils.isValidFileExtention(file, MimeTypeUtils.CODE_FILE_EXTENSION)) {
-                    invalidFiles.add(filename);
-                }
-            }
-        }
-        
-        // 如果有不支持的文件类型，抛出异常并列出所有不支持的文件
-        if (!invalidFiles.isEmpty()) {
-            String errorMessage = String.format(
-                "上传失败：以下文件不是代码文件类型，仅支持代码文件上传。不支持的文件：%s。支持的代码文件类型包括：Java、JavaScript、TypeScript、Python、C/C++、C#、Go、Rust、PHP、Ruby、Swift、Kotlin、Scala、HTML/CSS、配置文件、脚本文件、SQL等。",
-                String.join("、", invalidFiles)
-            );
-            log.error("文件类型验证失败: {}", errorMessage);
-            throw new RuntimeException(errorMessage);
         }
         
         List<TaskManagementFile> uploadedFiles = new java.util.ArrayList<>();

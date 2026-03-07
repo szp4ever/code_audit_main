@@ -52,11 +52,27 @@ public class OssClient {
             AWSCredentials credentials = new BasicAWSCredentials(properties.getAccessKey(), properties.getSecretKey());
             AWSCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(credentials);
             ClientConfiguration clientConfig = new ClientConfiguration();
+            // 忽略由于环境变量或系统属性导致的代理配置，避免出现 127.0.0.1 代理导致的连接失败
+            clientConfig.setProxyHost(null);
+            clientConfig.setProxyPort(-1);
             if (OssConstant.IS_HTTPS.equals(properties.getIsHttps())) {
                 clientConfig.setProtocol(Protocol.HTTPS);
             } else {
                 clientConfig.setProtocol(Protocol.HTTP);
             }
+            // 配置连接池参数，解决 "Timeout waiting for connection from pool" 问题
+            // 最大连接数：默认50，增加到100以支持更多并发请求
+            clientConfig.setMaxConnections(100);
+            // 连接超时时间（毫秒）：建立连接的最大等待时间，默认50秒，增加到60秒
+            clientConfig.setConnectionTimeout(60000);
+            // Socket读取超时时间（毫秒）：从服务器读取数据的最大等待时间，默认50秒，增加到60秒
+            clientConfig.setSocketTimeout(60000);
+            // 连接TTL（毫秒）：连接的最大生存时间，默认无限制，设置为5分钟避免连接长时间占用
+            clientConfig.setConnectionTTL(300000);
+            // 请求超时重试次数：默认3次，增加到5次以提高容错性
+            clientConfig.setMaxErrorRetry(5);
+            // 使用TCP Keep-Alive保持连接活跃
+            clientConfig.setUseTcpKeepAlive(true);
             AmazonS3ClientBuilder build = AmazonS3Client.builder()
                     .withEndpointConfiguration(endpointConfig)
                     .withClientConfiguration(clientConfig)
