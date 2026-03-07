@@ -18,11 +18,14 @@
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="qualityScore" column="quality_score"/>
+        <result property="isPassed" column="is_passed"/>
     </resultMap>
 
     <sql id="selectTaskManagementFileVo">
-        select id, task_id, name, relative_path, url, size, type, file_category, 
-               upload_time, create_by, create_time, update_time, del_flag
+        select id, task_id, name, relative_path, url, size, type, file_category,
+            upload_time, create_by, create_time, update_time, del_flag,
+            quality_score, is_passed
         from task_management_file
     </sql>
 
@@ -36,10 +39,46 @@
         order by upload_time desc
     </select>
 
+    <select id="selectOssIdById" resultType="java.lang.Long">
+        SELECT oss_id FROM task_management_file WHERE id = #{id}
+    </select>
+
+    <select id="selectReportList" resultType="org.ruoyi.chat.domain.vo.ReportVo">
+        SELECT
+        tf.id as id,
+        tf.name as name,
+        t.title as taskName,
+        t.task_type as type,
+        'ready' as status,
+        tf.create_time as createTime,
+        tf.url as fileUrl
+        FROM task_management_file tf
+        LEFT JOIN task_management t ON tf.task_id = t.id
+        WHERE tf.file_category = 'output'
+        AND tf.del_flag = '0'
+        <if test="keyword != null and keyword != ''">
+            AND (tf.name LIKE concat('%', #{keyword}, '%') OR t.title LIKE concat('%', #{keyword}, '%'))
+        </if>
+        <if test="type != null and type != ''">
+            AND t.task_type = #{type}
+        </if>
+        ORDER BY tf.create_time DESC
+    </select>
+
     <select id="selectFileById" parameterType="Long" resultMap="TaskManagementFileResult">
         <include refid="selectTaskManagementFileVo"/>
         where id = #{id} and del_flag = '0'
     </select>
+
+    <update id="updateTaskManagementFile" parameterType="org.ruoyi.chat.domain.TaskManagementFile">
+        update task_management_file
+        <set>
+            <if test="qualityScore != null">quality_score = #{qualityScore},</if>
+            <if test="isPassed != null">is_passed = #{isPassed},</if>
+            update_time = sysdate()
+        </set>
+        where id = #{id}
+    </update>
 
     <insert id="batchInsertFiles">
         insert into task_management_file(task_id, name, relative_path, url, size, type, file_category, upload_time, create_time)
