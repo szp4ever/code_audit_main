@@ -1,5 +1,6 @@
 package org.ruoyi.system.service;
 
+import org.ruoyi.system.domain.vo.UserOperationHeatmapItem;
 import org.ruoyi.common.log.event.OperLogEvent;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
@@ -54,4 +55,14 @@ public interface ISysOperLogService {
     void cleanOperLog();
 
     void recordOper(OperLogEvent operLogEvent);
+
+    /**
+     * 获取用户操作热力图数据
+     *
+     * @param timeRange 时间范围：day|week|month
+     * @param startDate 开始日期（格式：YYYY-MM-DD）
+     * @param endDate 结束日期（格式：YYYY-MM-DD）
+     * @return 用户操作热力图数据
+     */
+    List<UserOperationHeatmapItem> getUserOperationHeatmap(String timeRange, String startDate, String endDate);
 }

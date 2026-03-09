@@ -22,6 +22,8 @@ import org.ruoyi.core.page.TableDataInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -59,11 +61,11 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         if (ObjectUtil.isEmpty(taskManagement.getStatus())) {
             taskManagement.setStatus("pending");
         }
-        
+
         // 插入任务主表
         taskManagementMapper.insert(taskManagement);
         Long taskId = taskManagement.getId();
-        
+
         log.info("========== 创建任务开始 ==========");
         log.info("任务ID（自增主键）: {}", taskId);
         log.info("任务标题: {}", taskManagement.getTitle());
@@ -90,7 +92,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
                 TaskManagementFile file = taskManagement.getInputFiles().get(i);
                 log.info("处理第 {} 个文件", i + 1);
                 log.info("文件对象详情 - ID: {}, Name: {}, URL: {}", file.getId(), file.getName(), file.getUrl());
-                
+
                 Long fileId = file.getId();
                 if (fileId == null) {
                     // 尝试从其他字段获取ID（前端可能传入的是字符串ID）
@@ -102,17 +104,17 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
                     }
                     continue;
                 }
-                
+
                 // 更新文件的taskId和fileCategory
                 // taskId 必须关联到 task_management 表的 id（主键）
                 TaskManagementFile updateFile = new TaskManagementFile();
                 updateFile.setId(fileId);
                 updateFile.setTaskId(taskId);  // 使用创建任务时生成的自增ID
                 updateFile.setFileCategory("input");
-                
-                log.info("准备更新文件 - 文件ID: {}, 任务ID: {}, 文件类别: {}", 
+
+                log.info("准备更新文件 - 文件ID: {}, 任务ID: {}, 文件类别: {}",
                         updateFile.getId(), updateFile.getTaskId(), updateFile.getFileCategory());
-                
+
                 // 先查询文件是否存在
                 TaskManagementFile existingFile = taskManagementFileMapper.selectById(fileId);
                 if (existingFile == null) {
@@ -120,10 +122,10 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
                     throw new RuntimeException("文件不存在，文件ID: " + fileId);
                 }
                 log.info("文件存在，当前taskId: {}", existingFile.getTaskId());
-                
+
                 int updateCount = taskManagementFileMapper.updateById(updateFile);
                 log.info("文件更新结果，影响行数: {}", updateCount);
-                
+
                 if (updateCount <= 0) {
                     log.error("更新文件taskId失败，文件ID: {}", fileId);
                     throw new RuntimeException("更新文件taskId失败，文件ID: " + fileId);
@@ -139,7 +141,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         }
 
         log.info("========== 创建任务完成，任务ID: {} ==========", taskId);
-        
+
         // 异步调用Flask接口处理任务（在后台线程池中执行，不会阻塞当前请求）
         // 确保taskManagement对象有ID，用于后续处理
         taskManagement.setId(taskId);
@@ -153,7 +155,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             // 不抛出异常，避免影响任务创建
             // 即使提交失败，任务已创建，用户可以手动触发处理
         }
-        
+
         return taskId;
     }
 
@@ -189,18 +191,18 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         if (task == null) {
             return null;
         }
-        
+
         // 再次检查删除标志
         if ("1".equals(task.getDelFlag())) {
             return null;
         }
-        
+
         TaskManagementVo vo = convertToVo(task);
         // 加载文件
         loadFiles(vo, id);
         // 加载标签
         vo.setTags(taskManagementTagMapper.selectTagsByTaskId(id));
-        
+
         return vo;
     }
 
@@ -211,7 +213,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     @Transactional(rollbackFor = Exception.class)
     public int updateTask(TaskManagement taskManagement) {
         int result = taskManagementMapper.updateTaskManagement(taskManagement);
-        
+
         // 更新标签
         if (CollUtil.isNotEmpty(taskManagement.getTags())) {
             // 删除旧标签
@@ -227,7 +229,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             }
             taskManagementTagMapper.batchInsertTags(tags);
         }
-        
+
         return result;
     }
 
@@ -292,7 +294,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         // 加载输入文件
         List<TaskManagementFile> inputFiles = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
         vo.setInputFiles(convertFileListToVo(inputFiles));
-        
+
         // 加载输出文件
         List<TaskManagementFile> outputFiles = taskManagementFileMapper.selectFilesByTaskId(taskId, "output");
         vo.setOutputFiles(convertFileListToVo(outputFiles));
@@ -336,8 +338,8 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         }
         return statsList.stream()
                 .collect(Collectors.toMap(
-                    item -> String.valueOf(item.get("key")),
-                    item -> ((Number) item.get("value")).intValue()
+                        item -> String.valueOf(item.get("key")),
+                        item -> ((Number) item.get("value")).intValue()
                 ));
     }
 
@@ -352,8 +354,8 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         }
         return statsList.stream()
                 .collect(Collectors.toMap(
-                    item -> String.valueOf(item.get("key")),
-                    item -> ((Number) item.get("value")).intValue()
+                        item -> String.valueOf(item.get("key")),
+                        item -> ((Number) item.get("value")).intValue()
                 ));
     }
 
@@ -500,6 +502,8 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     @Override
     public TaskVulnerabilityDetailVo getTaskVulnerabilities(Long taskId) {
         // 查询任务信息
+
+        calculateAndSaveTaskMetrics(taskId);
         TaskManagement task = taskManagementMapper.selectById(taskId);
         if (task == null) {
             return null;
@@ -507,7 +511,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
 
         // 查询issues列表
         List<TaskManagementIssue> issues = taskManagementIssueMapper.selectIssuesByTaskId(taskId);
-        
+
         // 统计severity数量
         List<Map<String, Object>> severityStats = taskManagementIssueMapper.selectSeverityCountByTaskId(taskId);
         Map<String, Integer> severityCount = new HashMap<>();
@@ -525,7 +529,11 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         detailVo.setTaskTitle(task.getTitle());
         detailVo.setTotalCount(issues != null ? issues.size() : 0);
         detailVo.setSeverityCount(severityCount);
-        
+        detailVo.setOverallScore(task.getOverallScore());
+        detailVo.setComplianceRate(task.getComplianceRate());
+        detailVo.setPassedFileCount(task.getPassedFileCount());
+        detailVo.setTotalFileCount(task.getTotalFileCount());
+
         // 转换issues为VulnerabilityVo列表
         List<VulnerabilityVo> vulnerabilityList = new ArrayList<>();
         if (CollUtil.isNotEmpty(issues)) {
@@ -535,6 +543,16 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             }
         }
         detailVo.setVulnerabilities(vulnerabilityList);
+
+
+        List<TaskManagementFile> files = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
+        detailVo.setFileMetrics(files.stream().map(f -> {
+            TaskVulnerabilityDetailVo.FileMetricVo m = new TaskVulnerabilityDetailVo.FileMetricVo();
+            m.setFileName(f.getName());
+            m.setScore(f.getQualityScore());
+            m.setIsPassed(f.getIsPassed() != null && f.getIsPassed() == 1);
+            return m;
+        }).collect(Collectors.toList()));
 
         return detailVo;
     }
@@ -548,7 +566,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         vo.setTaskId(issue.getTaskId());
         vo.setTitle(issue.getIssueName());
         vo.setDescription(issue.getDescription());
-        
+
         // 转换severity为小写（Low -> low, Medium -> medium, High -> high, Critical -> critical）
         String severity = issue.getSeverity();
         if (severity != null) {
@@ -556,9 +574,9 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         } else {
             vo.setSeverity("low");
         }
-        
+
         vo.setFilePath(issue.getFileName());
-        
+
         // 转换lineNumber为Integer（如果是范围，取第一个数字）
         String lineNumberStr = issue.getLineNumber();
         if (lineNumberStr != null && !lineNumberStr.isEmpty()) {
@@ -577,14 +595,52 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         } else {
             vo.setLineNumber(null);
         }
-        
+
         vo.setCodeSnippet(null); // 数据库中没有此字段
         vo.setFixSuggestion(issue.getFixSuggestion());
         vo.setCategory(null); // 数据库中没有此字段
         vo.setCreatedAt(issue.getCreateTime());
-        
+
         return vo;
     }
+
+    /**
+     * 核心算法：基于漏洞严重程度计算并回填分数
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void calculateAndSaveTaskMetrics(Long taskId) {
+        // 1. 获取任务下的所有输入文件
+        List<TaskManagementFile> files = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
+        // 2. 获取该任务发现的所有漏洞 (Issues)
+        List<TaskManagementIssue> issues = taskManagementIssueMapper.selectIssuesByTaskId(taskId);
+
+        // 按文件名对漏洞进行分组，方便查每个文件有多少漏洞
+        Map<String, List<TaskManagementIssue>> issuesByFile = issues.stream()
+                .filter(issue -> issue.getFileName() != null)
+                .collect(Collectors.groupingBy(TaskManagementIssue::getFileName));
+
+        int passedFiles = 0;
+        BigDecimal totalScoreSum = BigDecimal.ZERO;
+
+        // 3. 遍历每个文件计算得分
+        for (TaskManagementFile file : files) {
+            List<TaskManagementIssue> fileIssues = issuesByFile.getOrDefault(file.getName(), new ArrayList<>());
+
+            int score = 100; // 初始分 100
+            boolean hasCritical = false;
+
+            // 根据你要求的严重程度进行智能扣分
+            for (TaskManagementIssue issue : fileIssues) {
+                String severity = issue.getSeverity().toLowerCase();
+                if ("critical".equals(severity) || "严重".equals(severity)) { score -= 20; hasCritical = true; }
+                else if ("high".equals(severity) || "高".equals(severity)) { score -= 10; }
+                else if ("medium".equals(severity) || "中".equals(severity)) { score -= 5; }
+                else if ("low".equals(severity) || "低".equals(severity)) { score -= 2; }
+            }
+            score = Math.max(0, score); // 确保最低 0 分
+
+            // 智能判定通过：得分 >= 60 且 没有任何严重(Critical)漏洞
+            boolean isPassed = (score >= 60) && !hasCritical;
 
     @Override
     public CodeStandardPassRate getPassRateByTimeRange(String start, String end) {
@@ -611,3 +667,32 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     }
 }
 
+            // 回填数据到文件实体
+            file.setQualityScore(new BigDecimal(score));
+            file.setIsPassed(isPassed ? 1 : 0);
+
+            // 更新到数据库 task_management_file 表
+            taskManagementFileMapper.updateTaskManagementFile(file);
+
+            if (isPassed) passedFiles++;
+            totalScoreSum = totalScoreSum.add(new BigDecimal(score));
+        }
+
+        // 4. 计算并更新任务主表指标 (task_management)
+        if (!files.isEmpty()) {
+            int totalFileCount = files.size();
+            BigDecimal overallScore = totalScoreSum.divide(new BigDecimal(totalFileCount), 2, RoundingMode.HALF_UP);
+            BigDecimal complianceRate = new BigDecimal(passedFiles).divide(new BigDecimal(totalFileCount), 4, RoundingMode.HALF_UP);
+
+            TaskManagement task = new TaskManagement();
+            task.setId(taskId);
+            task.setOverallScore(overallScore);
+            task.setComplianceRate(complianceRate);
+            task.setPassedFileCount(passedFiles);
+            task.setTotalFileCount(totalFileCount);
+
+            // 调用你现有的 updateTaskManagement 方法
+            taskManagementMapper.updateTaskManagement(task);
+        }
+    }
+}

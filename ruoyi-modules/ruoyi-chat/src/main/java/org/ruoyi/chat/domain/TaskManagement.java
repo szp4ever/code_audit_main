@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import org.ruoyi.core.domain.BaseEntity;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -19,7 +20,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @TableName("task_management")
 public class TaskManagement extends BaseEntity {
-    
+
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -50,7 +51,7 @@ public class TaskManagement extends BaseEntity {
     private String priority;
 
     /**
-     * 任务类型：code_standard_check-编码规范检查, data_security_audit-数据安全审计, 
+     * 任务类型：code_standard_check-编码规范检查, data_security_audit-数据安全审计,
      * dependency_analysis-依赖关系分析, compliance_audit-合规审计, other-其他
      */
     private String taskType;
@@ -112,11 +113,9 @@ public class TaskManagement extends BaseEntity {
     private String templateName;
     public void setTemplateName(String templateName) { this.templateName = templateName; }
     public String getTemplateName() { return templateName; }
+
+    private BigDecimal overallScore;
+    private BigDecimal complianceRate;
+    private Integer passedFileCount;
+    private Integer totalFileCount;
 }
-
-
-
-
-
-
-

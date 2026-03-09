@@ -22,14 +22,17 @@
         <result property="updateTime" column="update_time"/>
         <result property="templateId" column="template_id"/>
         <result property="templateName" column="template_name"/>
+        <result property="overallScore" column="overall_score" />
+        <result property="complianceRate" column="compliance_rate"/>
+        <result property="passedFileCount" column="passed_file_count"/>
+        <result property="totalFileCount" column="total_file_count"/>
     </resultMap>
 
     <sql id="selectTaskManagementVo">
         select t.id, t.project_id, t.title, t.description, t.priority, t.task_type, t.status, t.remark,
                t.create_dept, t.create_by, t.create_time, t.update_by, t.update_time,
-               t.del_flag, t.tenant_id,
-               t.template_id,
-               st.template_name
+               t.del_flag, t.tenant_id, t.template_id, st.template_name,
+               t.overall_score, t.compliance_rate, t.passed_file_count, t.total_file_count
         from task_management t
                  left join sys_template st on t.template_id = st.template_id
     </sql>
@@ -106,6 +109,10 @@
             <if test="remark != null">remark = #{remark},</if>
             template_id = #{templateId},
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="overallScore != null">overall_score = #{overallScore},</if>
+            <if test="complianceRate != null">compliance_rate = #{complianceRate},</if>
+            <if test="passedFileCount != null">passed_file_count = #{passedFileCount},</if>
+            <if test="totalFileCount != null">total_file_count = #{totalFileCount},</if>
             update_time = sysdate()
         </trim>
         where id = #{id}

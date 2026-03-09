@@ -11,12 +11,15 @@ import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
 import org.ruoyi.system.domain.bo.SysConfigBo;
+import org.ruoyi.system.domain.vo.PasswordRuleVo;
 import org.ruoyi.system.domain.vo.SysConfigVo;
 import org.ruoyi.system.service.ISysConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 参数配置 信息操作处理
@@ -70,6 +73,66 @@ public class SysConfigController extends BaseController {
     @GetMapping(value = "/configKey/{configKey}")
     public R<Void> getConfigKey(@PathVariable String configKey) {
         return R.ok(configService.selectConfigByKey(configKey));
+    }
+
+    /**
+     * 查询空闲超时时长配置
+     *
+     * 直接读取 config_key 为 sys,timeout 的参数值
+     * 返回结构：
+     * data: {
+     *   idleTimeoutMinutes: number // 空闲超时时长（单位：分钟）
+     * }
+     */
+    @GetMapping("/idle-timeout")
+    public R<Map<String, Integer>> getIdleTimeout() {
+        String configValue = configService.selectConfigByKey("sys.timeout");
+        int minutes = 0;
+        try {
+            minutes = Integer.parseInt(configValue);
+        } catch (NumberFormatException ignored) {
+        }
+        Map<String, Integer> data = new HashMap<>();
+        data.put("idleTimeoutMinutes", minutes);
+        return R.ok(data);
+    }
+
+    /**
+     * 查询密码规则配置
+     *
+     * 返回结构：
+     * data: {
+     *   minLength: number // 最小密码长度
+     *   requireSpecialChar: number // 0表示需要特殊字符，1表示不需要
+     * }
+     */
+    @GetMapping("/passwordRules")
+    public R<PasswordRuleVo> getPasswordRule() {
+        PasswordRuleVo vo = new PasswordRuleVo();
+        
+        // 获取密码最小长度配置
+        String passwordMinLengthStr = configService.selectConfigByKey("sys.codelength");
+        int minLength = 6; // 默认值
+        try {
+            if (passwordMinLengthStr != null && !passwordMinLengthStr.isEmpty()) {
+                minLength = Integer.parseInt(passwordMinLengthStr);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        vo.setMinLength(minLength);
+        
+        // 获取密码是否需要特殊字符配置
+        String passwordRequireSpecialStr = configService.selectConfigByKey("sys.mark");
+        int requireSpecialChar = 0; // 默认值：0表示需要特殊字符
+        try {
+            if (passwordRequireSpecialStr != null && !passwordRequireSpecialStr.isEmpty()) {
+                requireSpecialChar = Integer.parseInt(passwordRequireSpecialStr);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        vo.setRequireSpecialChar(requireSpecialChar);
+        
+        return R.ok(vo);
     }
 
     /**
