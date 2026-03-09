@@ -585,5 +585,29 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         
         return vo;
     }
+
+    @Override
+    public CodeStandardPassRate getPassRateByTimeRange(String start, String end) {
+        log.info("查询时间范围[{} - {}]的代码规范检查通过率", start, end);
+        // 调用Mapper查询聚合数据
+        CodeStandardPassRate passRate = taskManagementMapper.selectPassRateByTimeRange(start, end);
+        // 处理空数据，避免前端报错
+        if (passRate == null) {
+            passRate = new CodeStandardPassRate();
+            passRate.setPassed(0);
+            passRate.setFailed(0);
+        }
+        return passRate;
+    }
+
+    @Override
+    public List<TaskMonthlyCodeQualityItem> getTaskMonthlyCodeQuality(String startMonth, String endMonth) {
+        return taskManagementMapper.selectMonthlyCodeQuality(startMonth, endMonth);
+    }
+
+    @Override
+    public List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear) {
+        return taskManagementMapper.selectYearlyCodeQuality(startYear, endYear);
+    }
 }
 

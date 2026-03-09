@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.ruoyi.chat.domain.TaskManagement;
-import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
-import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
-import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
-import org.ruoyi.chat.domain.vo.TaskYearlyCountItem;
+import org.ruoyi.chat.domain.vo.*;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page; // 导入 MP 的 Page
 
 
@@ -105,6 +102,29 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
      * @return
      */
     Integer countTaskByStatus(@Param("status") String status);
+
+
+    /**
+     * 按时间范围统计通过/未通过数量
+     * @param start 开始时间（YYYY-MM）
+     * @param end 结束时间（YYYY-MM）
+     * @return 通过率统计结果
+     */
+    CodeStandardPassRate selectPassRateByTimeRange(@Param("start") String start, @Param("end") String end);
+
+    /**
+     * 查询月度代码质量统计
+     */
+    List<TaskMonthlyCodeQualityItem> selectMonthlyCodeQuality(
+            @Param("startMonth") String startMonth,
+            @Param("endMonth") String endMonth);
+
+    /**
+     * 查询年度代码质量统计
+     */
+    List<TaskYearlyCodeQualityItem> selectYearlyCodeQuality(
+            @Param("startYear") String startYear,
+            @Param("endYear") String endYear);
 }
 
 

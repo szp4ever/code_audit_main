@@ -116,6 +116,24 @@ public interface ITaskManagementService {
      * 获取任务实时数量
      */
     TaskRealTimeCountVO getTaskRealTimeCount();
+
+    /**
+     *  按时间范围查询代码规范检查通过率
+     * @param start
+     * @param end
+     * @return
+     */
+    CodeStandardPassRate getPassRateByTimeRange(String start, String end);
+
+    /**
+     * 获取月度代码质量统计
+     */
+    List<TaskMonthlyCodeQualityItem> getTaskMonthlyCodeQuality(String startMonth, String endMonth);
+
+    /**
+     * 获取年度代码质量统计
+     */
+    List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear);
 }
 
 

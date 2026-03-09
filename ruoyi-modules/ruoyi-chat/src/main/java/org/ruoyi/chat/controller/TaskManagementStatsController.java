@@ -4,11 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ruoyi.chat.domain.vo.TaskDurationStatItem;
-import org.ruoyi.chat.domain.vo.TaskMonthlyCountItem;
-import org.ruoyi.chat.domain.vo.TaskYearlyCountItem;
-import org.ruoyi.chat.domain.vo.TaskQuarterlyStatsItem;
-import org.ruoyi.chat.domain.vo.TaskRealTimeCountVO;
+import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.chat.service.ITaskManagementService;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
@@ -114,6 +110,42 @@ public class TaskManagementStatsController extends BaseController {
         // 返回前端（R 是项目统一返回结果封装，保持原有风格）
 //        System.out.println( realTimeCountVO );
         return R.ok(realTimeCountVO);
+    }
+    /**
+     * 按时间范围查询代码规范检查通过率（适配前端饼图）
+     */
+    @Operation(summary = "按时间范围查询通过率", description = "返回passed/failed数量，用于饼图展示")
+    @GetMapping("/code_standard_pass_rate")
+    public R<CodeStandardPassRate> getCodeStandardPassRate(
+            @RequestParam String start,
+            @RequestParam String end) {
+        log.info("查询代码规范检查通过率，时间范围：{} 至 {}", start, end);
+        CodeStandardPassRate passRate = taskManagementService.getPassRateByTimeRange(start, end);
+        return R.ok(passRate);
+    }
+
+    /**
+     * 月度代码质量统计
+     */
+    @Operation(summary = "获取月度代码质量统计")
+    @GetMapping("/monthly_code_Quality")
+    public R<List<TaskMonthlyCodeQualityItem>> getMonthlyCodeQuality(
+            @RequestParam(value = "start", required = false) String startMonth,
+            @RequestParam(value = "end", required = false) String endMonth) {
+        List<TaskMonthlyCodeQualityItem> monthlyCodeQuality = taskManagementService.getTaskMonthlyCodeQuality(startMonth, endMonth);
+        return R.ok(monthlyCodeQuality);
+    }
+
+    /**
+     * 年度代码质量统计
+     */
+    @Operation(summary = "获取年度代码质量统计")
+    @GetMapping("/yearly_code_Quality")
+    public R<List<TaskYearlyCodeQualityItem>> getYearlyCodeQuality(
+            @RequestParam(value = "start", required = false) String startYear,
+            @RequestParam(value = "end", required = false) String endYear) {
+        List<TaskYearlyCodeQualityItem> yearlyCodeQuality = taskManagementService.getTaskYearlyCodeQuality(startYear, endYear);
+        return R.ok(yearlyCodeQuality);
     }
 }
 
