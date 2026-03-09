@@ -632,40 +632,25 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             // 根据你要求的严重程度进行智能扣分
             for (TaskManagementIssue issue : fileIssues) {
                 String severity = issue.getSeverity().toLowerCase();
-                if ("critical".equals(severity) || "严重".equals(severity)) { score -= 20; hasCritical = true; }
-                else if ("high".equals(severity) || "高".equals(severity)) { score -= 10; }
-                else if ("medium".equals(severity) || "中".equals(severity)) { score -= 5; }
-                else if ("low".equals(severity) || "低".equals(severity)) { score -= 2; }
+                if ("critical".equals(severity) || "严重".equals(severity)) {
+                    score -= 20;
+                    hasCritical = true;
+                } else if ("high".equals(severity) || "高".equals(severity)) {
+                    score -= 10;
+                } else if ("medium".equals(severity) || "中".equals(severity)) {
+                    score -= 5;
+                } else if ("low".equals(severity) || "低".equals(severity)) {
+                    score -= 2;
+                }
             }
             score = Math.max(0, score); // 确保最低 0 分
 
             // 智能判定通过：得分 >= 60 且 没有任何严重(Critical)漏洞
             boolean isPassed = (score >= 60) && !hasCritical;
 
-    @Override
-    public CodeStandardPassRate getPassRateByTimeRange(String start, String end) {
-        log.info("查询时间范围[{} - {}]的代码规范检查通过率", start, end);
-        // 调用Mapper查询聚合数据
-        CodeStandardPassRate passRate = taskManagementMapper.selectPassRateByTimeRange(start, end);
-        // 处理空数据，避免前端报错
-        if (passRate == null) {
-            passRate = new CodeStandardPassRate();
-            passRate.setPassed(0);
-            passRate.setFailed(0);
-        }
-        return passRate;
-    }
 
-    @Override
-    public List<TaskMonthlyCodeQualityItem> getTaskMonthlyCodeQuality(String startMonth, String endMonth) {
-        return taskManagementMapper.selectMonthlyCodeQuality(startMonth, endMonth);
-    }
 
-    @Override
-    public List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear) {
-        return taskManagementMapper.selectYearlyCodeQuality(startYear, endYear);
-    }
-}
+
 
             // 回填数据到文件实体
             file.setQualityScore(new BigDecimal(score));
@@ -694,5 +679,29 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
             // 调用你现有的 updateTaskManagement 方法
             taskManagementMapper.updateTaskManagement(task);
         }
+    }
+
+    @Override
+    public CodeStandardPassRate getPassRateByTimeRange(String start, String end) {
+        log.info("查询时间范围[{} - {}]的代码规范检查通过率", start, end);
+        // 调用Mapper查询聚合数据
+        CodeStandardPassRate passRate = taskManagementMapper.selectPassRateByTimeRange(start, end);
+        // 处理空数据，避免前端报错
+        if (passRate == null) {
+            passRate = new CodeStandardPassRate();
+            passRate.setPassed(0);
+            passRate.setFailed(0);
+        }
+        return passRate;
+    }
+
+    @Override
+    public List<TaskMonthlyCodeQualityItem> getTaskMonthlyCodeQuality(String startMonth, String endMonth) {
+        return taskManagementMapper.selectMonthlyCodeQuality(startMonth, endMonth);
+    }
+
+    @Override
+    public List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear) {
+        return taskManagementMapper.selectYearlyCodeQuality(startYear, endYear);
     }
 }
