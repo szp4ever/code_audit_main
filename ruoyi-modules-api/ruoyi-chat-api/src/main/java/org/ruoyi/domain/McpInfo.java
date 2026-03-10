@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -13,6 +14,7 @@ import org.ruoyi.core.domain.BaseEntity;
  * @author ageerle
  * @date Sat Aug 09 16:50:58 CST 2025
  */
+@AutoMapper(target = org.ruoyi.domain.vo.McpInfoVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("mcp_info")

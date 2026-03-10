@@ -18,8 +18,8 @@ import org.ruoyi.system.domain.SysPost;
  */
 
 @Data
+@AutoMapper(target = SysPost.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysPost.class, reverseConvertGenerate = false)
 public class SysPostBo extends BaseEntity {
 
     /**

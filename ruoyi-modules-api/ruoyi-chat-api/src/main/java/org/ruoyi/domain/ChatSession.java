@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.io.Serial;
  * @author ageerle
  * @date 2025-05-03
  */
+@AutoMapper(target = org.ruoyi.domain.vo.ChatSessionVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("chat_session")

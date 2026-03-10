@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -14,6 +15,7 @@ import java.io.Serial;
  *
  * @author Michelle.Chung
  */
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysTenantPackageVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_tenant_package")

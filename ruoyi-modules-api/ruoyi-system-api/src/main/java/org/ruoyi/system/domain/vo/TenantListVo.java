@@ -1,6 +1,5 @@
 package org.ruoyi.system.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 
 /**
@@ -9,7 +8,6 @@ import lombok.Data;
  * @author Lion Li
  */
 @Data
-@AutoMapper(target = SysTenantVo.class)
 public class TenantListVo {
 
     private String tenantId;

@@ -13,9 +13,8 @@ import java.util.Map;
  *
  * @author Michelle.Chung
  */
-
+@AutoMapper(target = SysLogininfor.class)
 @Data
-@AutoMapper(target = SysLogininfor.class, reverseConvertGenerate = false)
 public class SysLogininforBo {
 
     /**

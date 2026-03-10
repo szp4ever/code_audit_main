@@ -10,12 +10,12 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.domain.bo.CweStandardTypeBo;
-import org.ruoyi.domain.vo.CweStandardTypeVo;
-import org.ruoyi.domain.vo.CweStandardMappingVo;
-import org.ruoyi.domain.vo.CweImpactMappingVo;
-import org.ruoyi.domain.vo.CweHierarchyVo;
-import org.ruoyi.service.ICweClassificationService;
+import org.ruoyi.knowledge.cwe.domain.bo.CweStandardTypeBo;
+import org.ruoyi.knowledge.cwe.domain.vo.CweStandardTypeVo;
+import org.ruoyi.knowledge.cwe.domain.vo.CweStandardMappingVo;
+import org.ruoyi.knowledge.cwe.domain.vo.CweImpactMappingVo;
+import org.ruoyi.knowledge.cwe.domain.vo.CweHierarchyVo;
+import org.ruoyi.knowledge.cwe.service.ICweClassificationService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

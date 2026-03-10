@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -12,6 +13,7 @@ import org.ruoyi.common.tenant.core.TenantEntity;
  * @author Lion Li
  */
 
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysPostVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_post")

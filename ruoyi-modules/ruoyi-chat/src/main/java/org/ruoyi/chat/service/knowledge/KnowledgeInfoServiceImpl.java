@@ -7,40 +7,58 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import org.ruoyi.chain.loader.ResourceLoader;
-import org.ruoyi.chain.loader.ResourceLoaderFactory;
+import org.ruoyi.knowledge.ingestion.loader.ResourceLoader;
+import org.ruoyi.knowledge.ingestion.loader.ResourceLoaderFactory;
 import org.ruoyi.chat.enums.ChatModeType;
 import org.ruoyi.common.core.domain.model.LoginUser;
 import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.common.core.utils.DateUtils;
 import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StringUtils;
+import org.ruoyi.common.core.utils.SpringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.domain.*;
-import org.ruoyi.domain.bo.KnowledgeInfoBo;
-import org.ruoyi.domain.vo.KnowledgeAttachVo;
-import org.ruoyi.mapper.KnowledgeAttachProcessMapper;
-import org.ruoyi.domain.bo.KnowledgeInfoUploadBo;
-import org.ruoyi.domain.bo.StoreEmbeddingBo;
-import org.ruoyi.domain.bo.QueryVectorBo;
+import org.ruoyi.knowledge.curation.convert.KnowledgeInfoConvert;
+import org.ruoyi.knowledge.curation.domain.KnowledgeInfo;
+import org.ruoyi.knowledge.curation.domain.KnowledgeItem;
+import org.ruoyi.knowledge.curation.domain.KnowledgeRole;
+import org.ruoyi.knowledge.curation.domain.KnowledgeRoleRelation;
+import org.ruoyi.knowledge.ingestion.domain.KnowledgeAttach;
+import org.ruoyi.knowledge.ingestion.domain.KnowledgeAttachProcess;
+import org.ruoyi.knowledge.ingestion.domain.KnowledgeFragment;
+import org.ruoyi.knowledge.curation.domain.bo.KnowledgeInfoBo;
+import org.ruoyi.knowledge.ingestion.domain.vo.KnowledgeAttachVo;
+import org.ruoyi.knowledge.ingestion.mapper.KnowledgeAttachProcessMapper;
+import org.ruoyi.knowledge.ingestion.domain.bo.KnowledgeInfoUploadBo;
+import org.ruoyi.knowledge.ingestion.domain.bo.StoreEmbeddingBo;
+import org.ruoyi.knowledge.ingestion.domain.bo.QueryVectorBo;
 import org.ruoyi.domain.vo.ChatModelVo;
-import org.ruoyi.domain.vo.KnowledgeInfoVo;
-import org.ruoyi.domain.vo.MatchDetailVo;
-import org.ruoyi.embedding.EmbeddingModelFactory;
+import org.ruoyi.knowledge.curation.domain.vo.DailyCountPointVo;
+import org.ruoyi.knowledge.curation.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.knowledge.curation.domain.vo.KnowledgeStorageStatsVo;
+import org.ruoyi.knowledge.curation.domain.vo.StorageTopItemVo;
+import org.ruoyi.knowledge.ingestion.domain.vo.MatchDetailVo;
+import org.ruoyi.knowledge.ingestion.embedding.EmbeddingModelFactory;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import org.ruoyi.domain.enums.ProcessingStatus;
-import org.ruoyi.mapper.*;
-import org.ruoyi.service.IAttachProcessService;
+import org.ruoyi.knowledge.ingestion.enums.ProcessingStatus;
+import org.ruoyi.knowledge.curation.mapper.KnowledgeInfoMapper;
+import org.ruoyi.knowledge.curation.mapper.KnowledgeItemMapper;
+import org.ruoyi.knowledge.curation.mapper.KnowledgeItemFragmentMapper;
+import org.ruoyi.knowledge.curation.domain.KnowledgeItemFragment;
+import org.ruoyi.knowledge.curation.mapper.KnowledgeRoleMapper;
+import org.ruoyi.knowledge.curation.mapper.KnowledgeRoleRelationMapper;
+import org.ruoyi.knowledge.ingestion.mapper.KnowledgeAttachMapper;
+import org.ruoyi.knowledge.ingestion.mapper.KnowledgeFragmentMapper;
+import org.ruoyi.knowledge.ingestion.service.IAttachProcessService;
 import org.ruoyi.service.IChatModelService;
-import org.ruoyi.service.IKnowledgeInfoService;
-import org.ruoyi.service.IKnowledgeItemService;
-import org.ruoyi.service.VectorStoreService;
+import org.ruoyi.knowledge.curation.service.IKnowledgeInfoService;
+import org.ruoyi.knowledge.curation.service.IKnowledgeItemService;
+import org.ruoyi.knowledge.ingestion.service.VectorStoreService;
 import org.ruoyi.system.service.ISysOssService;
-import org.ruoyi.utils.FileUploadValidator;
-import org.ruoyi.common.util.RateLimitHandler;
+import org.ruoyi.knowledge.shared.utils.FileUploadValidator;
+import org.ruoyi.knowledge.shared.utils.RateLimitHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -49,6 +67,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,8 +85,11 @@ import java.util.stream.Collectors;
 public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeInfoServiceImpl.class);
+    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final KnowledgeInfoMapper baseMapper;
+
+    private final KnowledgeInfoConvert knowledgeInfoConvert;
 
     private final VectorStoreService vectorStoreService;
 
@@ -84,13 +109,15 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
 
     private final KnowledgeItemMapper knowledgeItemMapper;
 
+    private final KnowledgeItemFragmentMapper itemFragmentMapper;
+
     private final EmbeddingModelFactory embeddingModelFactory;
 
     private final IAttachProcessService attachProcessService;
     
     private final KnowledgeAttachProcessMapper attachProcessMapper;
     
-    private final org.ruoyi.service.IKnowledgeItemService knowledgeItemService;
+    private final org.ruoyi.knowledge.curation.service.IKnowledgeItemService knowledgeItemService;
 
     /**
      * 查询知识库
@@ -120,6 +147,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             Long currentUserId = loginUser.getUserId();
             for (KnowledgeInfoVo vo : result.getRecords()) {
                 vo.setCanEdit(canEditKnowledge(vo, currentUserId));
+                // 实时计算统计字段
+                calculateRealTimeStatistics(vo);
             }
             if (StringUtils.isNotBlank(bo.getSearchKeyword())) {
                 sortByRelevance(result.getRecords(), bo.getSearchKeyword());
@@ -150,6 +179,8 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
             if (result.getRecords() != null) {
                 for (KnowledgeInfoVo vo : result.getRecords()) {
                     vo.setCanEdit(canEditKnowledge(vo, currentUserId));
+                    // 实时计算统计字段
+                    calculateRealTimeStatistics(vo);
                 }
             }
             return TableDataInfo.build(result);
@@ -235,10 +266,54 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         }
 
         Page<KnowledgeInfoVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        if (result.getRecords() != null && StringUtils.isNotBlank(bo.getSearchKeyword())) {
-            sortByRelevance(result.getRecords(), bo.getSearchKeyword());
+        if (result.getRecords() != null) {
+            // 实时计算统计字段
+            for (KnowledgeInfoVo vo : result.getRecords()) {
+                calculateRealTimeStatistics(vo);
+            }
+            if (StringUtils.isNotBlank(bo.getSearchKeyword())) {
+                sortByRelevance(result.getRecords(), bo.getSearchKeyword());
+            }
         }
         return TableDataInfo.build(result);
+    }
+
+    /**
+     * 实时计算知识库统计字段
+     * 在列表查询中为每个 KnowledgeInfoVo 计算实时的统计数据
+     *
+     * @param vo 知识库视图对象
+     */
+    private void calculateRealTimeStatistics(KnowledgeInfoVo vo) {
+        if (vo == null || StringUtils.isBlank(vo.getKid())) {
+            return;
+        }
+        String kid = vo.getKid();
+        try {
+            // 实时计算条目数（基于实际查询，不依赖 del_flag 以兼容未迁移 schema）
+            Long itemCount = knowledgeItemMapper.selectCount(
+                Wrappers.<KnowledgeItem>lambdaQuery()
+                    .eq(KnowledgeItem::getKid, kid)
+            );
+            vo.setItemCount(itemCount != null ? itemCount.intValue() : 0);
+
+            // 实时计算片段数（基于实际查询，不依赖 del_flag 以兼容未迁移 schema）
+            Long fragmentCount = fragmentMapper.selectCount(
+                Wrappers.<KnowledgeFragment>lambdaQuery()
+                    .eq(KnowledgeFragment::getKid, kid)
+            );
+            vo.setFragmentCount(fragmentCount != null ? fragmentCount.intValue() : 0);
+
+            // 实时计算附件数（基于实际查询）
+            Long attachCount = attachMapper.selectCount(
+                Wrappers.<KnowledgeAttach>lambdaQuery()
+                    .eq(KnowledgeAttach::getKid, kid)
+            );
+            vo.setAttachCount(attachCount != null ? attachCount.intValue() : 0);
+            // dataSize 保持使用冗余字段值（避免查询 MinIO 的性能开销）
+        } catch (Exception e) {
+            log.warn("实时计算知识库统计字段失败: kid={}, error={}", kid, e.getMessage());
+        }
     }
 
     /**
@@ -359,7 +434,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     @Override
     public Boolean insertByBo(KnowledgeInfoBo bo) {
-        KnowledgeInfo add = MapstructUtils.convert(bo, KnowledgeInfo.class);
+        KnowledgeInfo add = knowledgeInfoConvert.toEntity(bo);
         validEntityBeforeSave(add);
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
@@ -373,7 +448,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
      */
     @Override
     public Boolean updateByBo(KnowledgeInfoBo bo) {
-        KnowledgeInfo update = MapstructUtils.convert(bo, KnowledgeInfo.class);
+        KnowledgeInfo update = knowledgeInfoConvert.toEntity(bo);
         validEntityBeforeSave(update);
         return baseMapper.updateById(update) > 0;
     }
@@ -399,7 +474,7 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveOne(KnowledgeInfoBo bo) {
-        KnowledgeInfo knowledgeInfo = MapstructUtils.convert(bo, KnowledgeInfo.class);
+        KnowledgeInfo knowledgeInfo = knowledgeInfoConvert.toEntity(bo);
         if (StringUtils.isBlank(bo.getKid())) {
             String kid = RandomUtil.randomString(10);
             if (knowledgeInfo != null) {
@@ -727,178 +802,41 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         
         try {
             //检查是否已取消
-            org.ruoyi.domain.vo.KnowledgeAttachProcessVo processCheck = attachProcessService.getCurrentStatus(processId);
+            org.ruoyi.knowledge.ingestion.domain.vo.KnowledgeAttachProcessVo processCheck = attachProcessService.getCurrentStatus(processId);
             if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
                 log.info("[processContentAfterUpload] 处理任务已取消，停止处理: processId={}", processId);
                 return;
             }
             
-            //更新状态为分块中，分块已完成（在创建processId之前已完成），直接设置为完成
-            Map<String, Object> chunkingData = new HashMap<>();
-            chunkingData.put("stage", "CHUNKING");
-            chunkingData.put("totalCount", chunkList.size());
-            chunkingData.put("currentIndex", chunkList.size());//分块已完成
-            attachProcessService.updateStatus(processId, ProcessingStatus.CHUNKING, chunkingData);
-            
-        KnowledgeInfoVo knowledgeInfoVo = baseMapper.selectVoOne(Wrappers.<KnowledgeInfo>lambdaQuery()
+            // 查询知识库和模型配置
+            KnowledgeInfoVo knowledgeInfoVo = baseMapper.selectVoOne(Wrappers.<KnowledgeInfo>lambdaQuery()
                     .eq(KnowledgeInfo::getKid, kid));
             if (knowledgeInfoVo == null) {
                 throw new ServiceException("知识库不存在: kid=" + kid);
             }
-            
-        ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
-        if (chatModelVo == null) {
-            chatModelVo = chatModelService.selectModelByCategoryWithHighestPriority(ChatModeType.VECTOR.getCode());
+
+            ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
+            if (chatModelVo == null) {
+                chatModelVo = chatModelService.selectModelByCategoryWithHighestPriority(ChatModeType.VECTOR.getCode());
                 if (chatModelVo == null) {
                     throw new ServiceException("未找到可用的向量模型，请先在chat_model表中配置category='vector'的模型");
                 }
             }
-            
-            //更新状态为匹配中，并传递总数信息
-            Map<String, Object> matchingInitData = new HashMap<>();
-            matchingInitData.put("stage", "MATCHING");
-            matchingInitData.put("totalCount", chunkList.size());
-            matchingInitData.put("currentIndex", 0);
-            attachProcessService.updateStatus(processId, ProcessingStatus.MATCHING, matchingInitData);
-            
-            // 相似度匹配
-            List<Map<String, Object>> matchingResults = new ArrayList<>();
-        Map<Integer, String> chunkIndexToItemUuidMap = new HashMap<>();
-            
-        if (Boolean.TRUE.equals(autoClassify)) {
-                try {
-            EmbeddingModel embeddingModel = embeddingModelFactory.createModel(
-                    knowledgeInfoVo.getEmbeddingModelName(), null);
-            double threshold = 0.85;
-                    int totalChunks = chunkList.size();
-                    for (int i = 0; i < totalChunks; i++) {
-                        try {
-                String chunk = chunkList.get(i);
-                            
-                            Embedding embedding = RateLimitHandler.executeWithRetry(() -> {
-                                RateLimitHandler.addCallInterval();
-                                return embeddingModel.embed(chunk).content();
-                            }, "片段" + i + "向量化");
-                            
-                QueryVectorBo queryBo = new QueryVectorBo();
-                queryBo.setKid(kid);
-                queryBo.setQuery(chunk);
-                queryBo.setMaxResults(5);
-                queryBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
-                List<String> similarTexts = vectorStoreService.getQueryVector(queryBo);
-                if (CollUtil.isNotEmpty(similarTexts)) {
-                                String similarText = similarTexts.get(0);
-                                List<KnowledgeFragment> similarFragments = fragmentMapper.selectList(
-                            Wrappers.<KnowledgeFragment>lambdaQuery()
-                                    .eq(KnowledgeFragment::getKid, kid)
-                                                .eq(KnowledgeFragment::getContent, similarText)
-                                    .isNotNull(KnowledgeFragment::getItemUuid)
-                                    .eq(KnowledgeFragment::getDelFlag, "0")
-                                    .last("LIMIT 1")
-                    );
-                                if (CollUtil.isNotEmpty(similarFragments)) {
-                                    KnowledgeFragment similarFragment = similarFragments.get(0);
-                    if (similarFragment != null && StringUtils.isNotBlank(similarFragment.getItemUuid())) {
-                        float[] queryVector = embedding.vector();
-                                        
-                                        Embedding similarEmbedding = RateLimitHandler.executeWithRetry(() -> {
-                                            RateLimitHandler.addCallInterval();
-                                            return embeddingModel.embed(similarText).content();
-                                        }, "片段" + i + "相似文本向量化");
-                                        
-                        float[] similarVector = similarEmbedding.vector();
-                        double similarity = calculateCosineSimilarity(queryVector, similarVector);
-                        if (similarity >= threshold) {
-                            chunkIndexToItemUuidMap.put(i, similarFragment.getItemUuid());
-                                            
-                                            // 记录匹配结果（不存储完整内容，只存储fid）
-                                            String fid = RandomUtil.randomString(10);
-                                            fids.add(fid);
-                                            Map<String, Object> matchResult = new HashMap<>();
-                                            matchResult.put("chunkIndex", i);
-                                            matchResult.put("fid", fid);
-                                            matchResult.put("matchedItemUuid", similarFragment.getItemUuid());
-                                            matchResult.put("matchedItemTitle", getItemTitle(similarFragment.getItemUuid()));
-                                            matchResult.put("similarity", similarity);
-                                            matchResult.put("userDecision", "keep");
-                                            matchingResults.add(matchResult);
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            if (RateLimitHandler.isRateLimitError(e)) {
-                                log.warn("[processContentAfterUpload] 片段{}遇到速率限制，已重试但仍失败，跳过: {}", i, e.getMessage());
-                            } else {
-                                log.warn("[processContentAfterUpload] 片段{}相似度匹配失败，跳过: {}", i, e.getMessage());
-                            }
-                        }
-                        
-                        //检查是否已取消并更新进度（在循环中定期检查）
-                        if (i % 5 == 0 || i == totalChunks - 1) {
-                            processCheck = attachProcessService.getCurrentStatus(processId);
-                            if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                                log.info("[processContentAfterUpload] 处理任务已取消，停止匹配: processId={}", processId);
-                                return;
-                            }
-                            
-                            //实时更新匹配进度
-                            Map<String, Object> progressData = new HashMap<>();
-                            progressData.put("currentIndex", i + 1);
-                            progressData.put("totalCount", totalChunks);
-                            progressData.put("stage", "MATCHING");
-                            try {
-                                attachProcessService.updateProgress(processId, progressData);
-                            } catch (Exception e) {
-                                log.warn("[processContentAfterUpload] 更新匹配进度失败: processId={}, error={}", processId, e.getMessage());
-                            }
-                        }
-                        
-                        // 如果没有匹配到，也需要记录fid
-                        if (!chunkIndexToItemUuidMap.containsKey(i)) {
-                            String fid = RandomUtil.randomString(10);
-                            fids.add(fid);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("[processContentAfterUpload] 相似度匹配阶段失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "相似度匹配失败: " + e.getMessage());
-                    throw e;
-                }
-                
-                //为所有未匹配的片段也创建matchingResults条目
+
+            // 更新状态为分块完成（新业务逻辑：PARSING -> CHUNKING）
+            Map<String, Object> chunkingData = new HashMap<>();
+            chunkingData.put("stage", "CHUNKING");
+            chunkingData.put("totalCount", chunkList.size());
+            chunkingData.put("currentIndex", chunkList.size()); // 分块已完成
+            attachProcessService.updateStatus(processId, ProcessingStatus.CHUNKING, chunkingData);
+
+            // 为所有片段生成fid
             for (int i = 0; i < chunkList.size(); i++) {
-                    if (!chunkIndexToItemUuidMap.containsKey(i)) {
-                        String fid = fids.get(i);
-                        Map<String, Object> unmatchedResult = new HashMap<>();
-                        unmatchedResult.put("chunkIndex", i);
-                        unmatchedResult.put("fid", fid);
-                        unmatchedResult.put("matchedItemUuid", null);
-                        unmatchedResult.put("matchedItemTitle", null);
-                        unmatchedResult.put("similarity", null);
-                        unmatchedResult.put("userDecision", null);
-                        matchingResults.add(unmatchedResult);
-                    }
-                }
-            } else {
-                // 如果没有启用相似度匹配，为所有片段生成fid
-                for (int i = 0; i < chunkList.size(); i++) {
-                    String fid = RandomUtil.randomString(10);
-                    fids.add(fid);
-                    //为所有片段创建matchingResults条目（未匹配状态）
-                    Map<String, Object> unmatchedResult = new HashMap<>();
-                    unmatchedResult.put("chunkIndex", i);
-                    unmatchedResult.put("fid", fid);
-                    unmatchedResult.put("matchedItemUuid", null);
-                    unmatchedResult.put("matchedItemTitle", null);
-                    unmatchedResult.put("similarity", null);
-                    unmatchedResult.put("userDecision", null);
-                    matchingResults.add(unmatchedResult);
-                }
+                String fid = RandomUtil.randomString(10);
+                fids.add(fid);
             }
-            
-            // 创建片段（不立即关联条目）
+
+            // 创建片段（新业务逻辑：片段不关联条目，直接存储）
             List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
             for (int i = 0; i < chunkList.size(); i++) {
                 String fid = fids.get(i);
@@ -909,121 +847,71 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                 knowledgeFragment.setIdx(i);
                 knowledgeFragment.setContent(chunkList.get(i));
                 knowledgeFragment.setCreateTime(new Date());
-                // 如果有匹配结果，先关联；否则等待用户确认
-                if (chunkIndexToItemUuidMap.containsKey(i)) {
-                    knowledgeFragment.setItemUuid(chunkIndexToItemUuidMap.get(i));
-                } else {
-                    knowledgeFragment.setItemUuid(null);
-                }
+                knowledgeFragment.setItemUuid(null); // 新业务逻辑：片段不关联条目
                 knowledgeFragmentList.add(knowledgeFragment);
             }
+
             try {
                 fragmentMapper.insertBatch(knowledgeFragmentList);
+                log.info("[processContentAfterUpload] 创建片段完成: kid={}, docId={}, 片段数={}", kid, docId, chunkList.size());
             } catch (Exception e) {
                 log.error("[processContentAfterUpload] 创建片段失败: {}", e.getMessage(), e);
-                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
+                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED,
                         "创建片段失败: " + e.getMessage());
                 throw e;
             }
-            
-            // 根据autoCreateItems决定是否立即创建条目
-            if (Boolean.TRUE.equals(autoCreateItems) && Boolean.FALSE.equals(autoClassify)) {
-                // 旧逻辑：如果没有启用相似度匹配，立即创建条目
-                //更新状态为创建条目中，并传递总数信息
-                Map<String, Object> creatingItemsData = new HashMap<>();
-                creatingItemsData.put("stage", "CREATING_ITEMS");
-                creatingItemsData.put("totalCount", chunkList.size());
-                creatingItemsData.put("currentIndex", 0);
-                attachProcessService.updateStatus(processId, ProcessingStatus.CREATING_ITEMS, creatingItemsData);
-                
-                try {
-                    int totalChunks = chunkList.size();
-                    for (int i = 0; i < totalChunks; i++) {
-                if (!chunkIndexToItemUuidMap.containsKey(i)) {
-                    KnowledgeItem newItem = new KnowledgeItem();
-                    String uuid = RandomUtil.randomString(32);
-                    newItem.setItemUuid(uuid);
-                    newItem.setKid(kid);
-                            newItem.setTitle(sanitizedFileName + "-片段" + (i + 1));
-                    newItem.setCreateTime(new Date());
-                    newItem.setDelFlag("0");
-                    knowledgeItemMapper.insert(newItem);
-                    chunkIndexToItemUuidMap.put(i, uuid);
-                            
-                            // 更新片段关联
-                            KnowledgeFragment fragment = knowledgeFragmentList.get(i);
-                            fragment.setItemUuid(uuid);
-                            fragmentMapper.updateById(fragment);
-                        }
-                        
-                        //实时更新创建条目进度（每5个或最后一个）
-                        if (i % 5 == 0 || i == totalChunks - 1) {
-                            try {
-                                Map<String, Object> progressData = new HashMap<>();
-                                progressData.put("currentIndex", i + 1);
-                                progressData.put("totalCount", totalChunks);
-                                progressData.put("stage", "CREATING_ITEMS");
-                                attachProcessService.updateProgress(processId, progressData);
-                            } catch (Exception e) {
-                                log.warn("[processContentAfterUpload] 更新创建条目进度失败: processId={}, error={}", processId, e.getMessage());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("[processContentAfterUpload] 创建条目失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "创建条目失败: " + e.getMessage());
-                    throw e;
-                }
-                
-                //再次检查是否已取消
+
+            // 检查是否已取消
+            processCheck = attachProcessService.getCurrentStatus(processId);
+            if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
+                log.info("[processContentAfterUpload] 处理任务已取消，停止向量化: processId={}", processId);
+                return;
+            }
+
+            // 直接向量化存储（新业务逻辑：CHUNKING -> VECTORIZING）
+            try {
+                //更新状态为向量化
+                Map<String, Object> vectorizingData = new HashMap<>();
+                vectorizingData.put("totalCount", chunkList.size());
+                vectorizingData.put("currentIndex", 0);
+                attachProcessService.updateStatus(processId, ProcessingStatus.VECTORIZING, vectorizingData);
+
+                StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
+                storeEmbeddingBo.setKid(kid);
+                storeEmbeddingBo.setDocId(docId);
+                storeEmbeddingBo.setFids(fids);
+                storeEmbeddingBo.setChunkList(chunkList);
+                storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
+                storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
+                storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
+                storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
+
+                //传递processId用于进度更新
+                storeEmbeddingBo.setProcessId(processId);
+                vectorStoreService.storeEmbeddings(storeEmbeddingBo, attachProcessService);
+
+                //最后检查一次是否已取消
                 processCheck = attachProcessService.getCurrentStatus(processId);
                 if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                    log.info("[processContentAfterUpload] 处理任务已取消，停止向量化: processId={}", processId);
+                    log.info("[processContentAfterUpload] 处理任务已取消，停止更新完成状态: processId={}", processId);
                     return;
                 }
-                
-                // 直接向量化
+
+                attachProcessService.updateStatus(processId, ProcessingStatus.COMPLETED, null);
+                log.info("[processContentAfterUpload] 处理完成: kid={}, docId={}", kid, docId);
+
+                // 同步更新知识库数据量（参考刷新按钮实践）
                 try {
-                    //更新状态为向量化，并传递总数信息
-                    Map<String, Object> vectorizingData = new HashMap<>();
-                    vectorizingData.put("totalCount", chunkList.size());
-                    vectorizingData.put("currentIndex", 0);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.VECTORIZING, vectorizingData);
-                    
-                    StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
-                    storeEmbeddingBo.setKid(kid);
-                    storeEmbeddingBo.setDocId(docId);
-                    storeEmbeddingBo.setFids(fids);
-                    storeEmbeddingBo.setChunkList(chunkList);
-                    storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
-                    storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
-                    storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
-                    storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
-                    
-                    //传递processId用于进度更新
-                    storeEmbeddingBo.setProcessId(processId);
-                    vectorStoreService.storeEmbeddings(storeEmbeddingBo, attachProcessService);
-                    
-                    //最后检查一次是否已取消
-                    processCheck = attachProcessService.getCurrentStatus(processId);
-                    if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                        log.info("[processContentAfterUpload] 处理任务已取消，停止更新完成状态: processId={}", processId);
-                        return;
-                    }
-                    
-                    attachProcessService.updateStatus(processId, ProcessingStatus.COMPLETED, null);
-                } catch (Exception e) {
-                    log.error("[processContentAfterUpload] 向量化存储失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "向量化存储失败: " + e.getMessage());
-                    throw e;
-            }
-        } else {
-                // 新逻辑：进入用户审阅匹配结果状态
-                Map<String, Object> statusData = new HashMap<>();
-                statusData.put("matchingResults", matchingResults);
-                attachProcessService.updateStatus(processId, ProcessingStatus.USER_REVIEW_MATCHING, statusData);
+                    knowledgeItemService.updateKnowledgeDataSize(kid);
+                    log.info("[processContentAfterUpload] 知识库数据量已同步: kid={}", kid);
+                } catch (Exception syncEx) {
+                    log.warn("[processContentAfterUpload] 知识库数据量同步失败（非致命）: kid={}, error={}", kid, syncEx.getMessage());
+                }
+            } catch (Exception e) {
+                log.error("[processContentAfterUpload] 向量化存储失败: {}", e.getMessage(), e);
+                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED,
+                        "向量化存储失败: " + e.getMessage());
+                throw e;
             }
         } catch (ServiceException e) {
             // ServiceException已经更新了状态，直接抛出
@@ -1164,25 +1052,19 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         
         try {
             //检查是否已取消
-            org.ruoyi.domain.vo.KnowledgeAttachProcessVo processCheck = attachProcessService.getCurrentStatus(processId);
+            org.ruoyi.knowledge.ingestion.domain.vo.KnowledgeAttachProcessVo processCheck = attachProcessService.getCurrentStatus(processId);
             if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
                 log.info("处理任务已取消，停止处理: processId={}", processId);
                 return;
             }
             
-            //更新状态为分块中，分块已完成（在创建processId之前已完成），直接设置为完成
-            Map<String, Object> chunkingData = new HashMap<>();
-            chunkingData.put("stage", "CHUNKING");
-            chunkingData.put("totalCount", chunkList.size());
-            chunkingData.put("currentIndex", chunkList.size());//分块已完成
-            attachProcessService.updateStatus(processId, ProcessingStatus.CHUNKING, chunkingData);
-            
+            // 查询知识库和模型配置
             KnowledgeInfoVo knowledgeInfoVo = baseMapper.selectVoOne(Wrappers.<KnowledgeInfo>lambdaQuery()
                     .eq(KnowledgeInfo::getKid, kid));
             if (knowledgeInfoVo == null) {
                 throw new ServiceException("知识库不存在: kid=" + kid);
             }
-            
+
             ChatModelVo chatModelVo = chatModelService.selectModelByName(knowledgeInfoVo.getEmbeddingModelName());
             if (chatModelVo == null) {
                 chatModelVo = chatModelService.selectModelByCategoryWithHighestPriority(ChatModeType.VECTOR.getCode());
@@ -1190,275 +1072,104 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
                     throw new ServiceException("未找到可用的向量模型，请先在chat_model表中配置category='vector'的模型");
                 }
             }
-            
-            //更新状态为匹配中，并传递总数信息
-            Map<String, Object> matchingInitData = new HashMap<>();
-            matchingInitData.put("stage", "MATCHING");
-            matchingInitData.put("totalCount", chunkList.size());
-            matchingInitData.put("currentIndex", 0);
-            attachProcessService.updateStatus(processId, ProcessingStatus.MATCHING, matchingInitData);
-            
-            // 相似度匹配
-            List<Map<String, Object>> matchingResults = new ArrayList<>();
-            Map<Integer, String> chunkIndexToItemUuidMap = new HashMap<>();
-            
-            if (Boolean.TRUE.equals(autoClassify)) {
-                try {
-                    EmbeddingModel embeddingModel = embeddingModelFactory.createModel(
-                            knowledgeInfoVo.getEmbeddingModelName(), null);
-                    double threshold = 0.85;
-                    int totalChunks = chunkList.size();
-                    for (int i = 0; i < totalChunks; i++) {
-                        try {
-                            String chunk = chunkList.get(i);
-                            
-                            Embedding embedding = RateLimitHandler.executeWithRetry(() -> {
-                                RateLimitHandler.addCallInterval();
-                                return embeddingModel.embed(chunk).content();
-                            }, "片段" + i + "向量化");
-                            
-                            QueryVectorBo queryBo = new QueryVectorBo();
-                            queryBo.setKid(kid);
-                            queryBo.setQuery(chunk);
-                            queryBo.setMaxResults(5);
-                            queryBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
-                            List<String> similarTexts = vectorStoreService.getQueryVector(queryBo);
-                            if (CollUtil.isNotEmpty(similarTexts)) {
-                                String similarText = similarTexts.get(0);
-                                List<KnowledgeFragment> similarFragments = fragmentMapper.selectList(
-                                        Wrappers.<KnowledgeFragment>lambdaQuery()
-                                                .eq(KnowledgeFragment::getKid, kid)
-                                                .eq(KnowledgeFragment::getContent, similarText)
-                                                .isNotNull(KnowledgeFragment::getItemUuid)
-                                                .eq(KnowledgeFragment::getDelFlag, "0")
-                                                .last("LIMIT 1")
-                                );
-                                if (CollUtil.isNotEmpty(similarFragments)) {
-                                    KnowledgeFragment similarFragment = similarFragments.get(0);
-                                    if (similarFragment != null && StringUtils.isNotBlank(similarFragment.getItemUuid())) {
-                                        float[] queryVector = embedding.vector();
-                                        
-                                        Embedding similarEmbedding = RateLimitHandler.executeWithRetry(() -> {
-                                            RateLimitHandler.addCallInterval();
-                                            return embeddingModel.embed(similarText).content();
-                                        }, "片段" + i + "相似文本向量化");
-                                        
-                                        float[] similarVector = similarEmbedding.vector();
-                                        double similarity = calculateCosineSimilarity(queryVector, similarVector);
-                                        if (similarity >= threshold) {
-                                            chunkIndexToItemUuidMap.put(i, similarFragment.getItemUuid());
-                                            
-                                            // 记录匹配结果（不存储完整内容，只存储fid）
-                                            String fid = RandomUtil.randomString(10);
-                                            fids.add(fid);
-                                            Map<String, Object> matchResult = new HashMap<>();
-                                            matchResult.put("chunkIndex", i);
-                                            matchResult.put("fid", fid);
-                                            matchResult.put("matchedItemUuid", similarFragment.getItemUuid());
-                                            matchResult.put("matchedItemTitle", getItemTitle(similarFragment.getItemUuid()));
-                                            matchResult.put("similarity", similarity);
-                                            matchResult.put("userDecision", "keep");
-                                            matchingResults.add(matchResult);
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            if (RateLimitHandler.isRateLimitError(e)) {
-                                log.warn("片段{}遇到速率限制，已重试但仍失败，跳过: {}", i, e.getMessage());
-                            } else {
-                                log.warn("片段{}相似度匹配失败，跳过: {}", i, e.getMessage());
-                            }
-                        }
-                        
-                        //检查是否已取消并更新进度（在循环中定期检查）
-                        if (i % 5 == 0 || i == totalChunks - 1) {
-                            processCheck = attachProcessService.getCurrentStatus(processId);
-                            if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                                log.info("处理任务已取消，停止匹配: processId={}", processId);
-                                return;
-                            }
-                            
-                            //实时更新匹配进度
-                            Map<String, Object> progressData = new HashMap<>();
-                            progressData.put("currentIndex", i + 1);
-                            progressData.put("totalCount", totalChunks);
-                            progressData.put("stage", "MATCHING");
-                            try {
-                                attachProcessService.updateProgress(processId, progressData);
-                            } catch (Exception e) {
-                                log.warn("更新匹配进度失败: processId={}, error={}", processId, e.getMessage());
-                            }
-                        }
-                        
-                        // 如果没有匹配到，也需要记录fid
-                if (!chunkIndexToItemUuidMap.containsKey(i)) {
-                            String fid = RandomUtil.randomString(10);
-                            fids.add(fid);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("相似度匹配阶段失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "相似度匹配失败: " + e.getMessage());
-                    throw e;
-                }
-            } else {
-                // 如果没有启用相似度匹配，为所有片段生成fid
-        for (int i = 0; i < chunkList.size(); i++) {
-            String fid = RandomUtil.randomString(10);
-            fids.add(fid);
-                }
+
+            // 更新状态为分块完成（新业务逻辑：PARSING -> CHUNKING）
+            Map<String, Object> chunkingData = new HashMap<>();
+            chunkingData.put("stage", "CHUNKING");
+            chunkingData.put("totalCount", chunkList.size());
+            chunkingData.put("currentIndex", chunkList.size()); // 分块已完成
+            attachProcessService.updateStatus(processId, ProcessingStatus.CHUNKING, chunkingData);
+
+            // 为所有片段生成fid
+            for (int i = 0; i < chunkList.size(); i++) {
+                String fid = RandomUtil.randomString(10);
+                fids.add(fid);
             }
-            
-            // 创建片段（不立即关联条目）
+
+            // 创建片段（新业务逻辑：片段不关联条目，直接存储）
             List<KnowledgeFragment> knowledgeFragmentList = new ArrayList<>();
             for (int i = 0; i < chunkList.size(); i++) {
                 String fid = fids.get(i);
-            KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
-            knowledgeFragment.setKid(kid);
-            knowledgeFragment.setDocId(docId);
-            knowledgeFragment.setFid(fid);
-            knowledgeFragment.setIdx(i);
-            knowledgeFragment.setContent(chunkList.get(i));
-            knowledgeFragment.setCreateTime(new Date());
-                // 如果有匹配结果，先关联；否则等待用户确认
-                if (chunkIndexToItemUuidMap.containsKey(i)) {
-                    knowledgeFragment.setItemUuid(chunkIndexToItemUuidMap.get(i));
-                } else {
-                    knowledgeFragment.setItemUuid(null);
-                }
-            knowledgeFragmentList.add(knowledgeFragment);
-        }
+                KnowledgeFragment knowledgeFragment = new KnowledgeFragment();
+                knowledgeFragment.setKid(kid);
+                knowledgeFragment.setDocId(docId);
+                knowledgeFragment.setFid(fid);
+                knowledgeFragment.setIdx(i);
+                knowledgeFragment.setContent(chunkList.get(i));
+                knowledgeFragment.setCreateTime(new Date());
+                knowledgeFragment.setItemUuid(null); // 新业务逻辑：片段不关联条目
+                knowledgeFragmentList.add(knowledgeFragment);
+            }
+
             try {
-        fragmentMapper.insertBatch(knowledgeFragmentList);
+                fragmentMapper.insertBatch(knowledgeFragmentList);
+                log.info("[storeContent] 创建片段完成: kid={}, docId={}, 片段数={}", kid, docId, chunkList.size());
             } catch (Exception e) {
-                log.error("创建片段失败: {}", e.getMessage(), e);
-                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
+                log.error("[storeContent] 创建片段失败: {}", e.getMessage(), e);
+                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED,
                         "创建片段失败: " + e.getMessage());
                 throw e;
             }
-            
-            // 根据autoCreateItems决定是否立即创建条目
-            if (Boolean.TRUE.equals(autoCreateItems) && Boolean.FALSE.equals(autoClassify)) {
-                // 旧逻辑：如果没有启用相似度匹配，立即创建条目
-                //更新状态为创建条目中，并传递总数信息
-                Map<String, Object> creatingItemsData = new HashMap<>();
-                creatingItemsData.put("stage", "CREATING_ITEMS");
-                creatingItemsData.put("totalCount", chunkList.size());
-                creatingItemsData.put("currentIndex", 0);
-                attachProcessService.updateStatus(processId, ProcessingStatus.CREATING_ITEMS, creatingItemsData);
-                
-                try {
-                    int totalChunks = chunkList.size();
-                    for (int i = 0; i < totalChunks; i++) {
-                        if (!chunkIndexToItemUuidMap.containsKey(i)) {
-                            KnowledgeItem newItem = new KnowledgeItem();
-                            String uuid = RandomUtil.randomString(32);
-                            newItem.setItemUuid(uuid);
-                            newItem.setKid(kid);
-                            newItem.setTitle(sanitizedFileName + "-片段" + (i + 1));
-                            newItem.setCreateTime(new Date());
-                            newItem.setDelFlag("0");
-                            knowledgeItemMapper.insert(newItem);
-                            chunkIndexToItemUuidMap.put(i, uuid);
-                            
-                            // 更新片段关联
-                            KnowledgeFragment fragment = knowledgeFragmentList.get(i);
-                            fragment.setItemUuid(uuid);
-                            fragmentMapper.updateById(fragment);
-                        }
-                        
-                        //实时更新创建条目进度（每5个或最后一个）
-                        if (i % 5 == 0 || i == totalChunks - 1) {
-                            try {
-                                Map<String, Object> progressData = new HashMap<>();
-                                progressData.put("currentIndex", i + 1);
-                                progressData.put("totalCount", totalChunks);
-                                progressData.put("stage", "CREATING_ITEMS");
-                                attachProcessService.updateProgress(processId, progressData);
-                            } catch (Exception e) {
-                                log.warn("更新创建条目进度失败: processId={}, error={}", processId, e.getMessage());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("创建条目失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "创建条目失败: " + e.getMessage());
-                    throw e;
-                }
-                
-                //再次检查是否已取消
+
+            // 检查是否已取消
+            processCheck = attachProcessService.getCurrentStatus(processId);
+            if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
+                log.info("[storeContent] 处理任务已取消，停止向量化: processId={}", processId);
+                return;
+            }
+
+            // 直接向量化存储（新业务逻辑：CHUNKING -> VECTORIZING）
+            try {
+                //更新状态为向量化
+                Map<String, Object> vectorizingData = new HashMap<>();
+                vectorizingData.put("totalCount", chunkList.size());
+                vectorizingData.put("currentIndex", 0);
+                attachProcessService.updateStatus(processId, ProcessingStatus.VECTORIZING, vectorizingData);
+
+                StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
+                storeEmbeddingBo.setKid(kid);
+                storeEmbeddingBo.setDocId(docId);
+                storeEmbeddingBo.setFids(fids);
+                storeEmbeddingBo.setChunkList(chunkList);
+                storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
+                storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
+                storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
+                storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
+
+                //传递processId用于进度更新
+                storeEmbeddingBo.setProcessId(processId);
+                vectorStoreService.storeEmbeddings(storeEmbeddingBo, attachProcessService);
+
+                //最后检查一次是否已取消
                 processCheck = attachProcessService.getCurrentStatus(processId);
                 if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                    log.info("处理任务已取消，停止向量化: processId={}", processId);
+                    log.info("[storeContent] 处理任务已取消，停止更新完成状态: processId={}", processId);
                     return;
                 }
-                
-                //再次检查是否已取消
-                processCheck = attachProcessService.getCurrentStatus(processId);
-                if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                    log.info("处理任务已取消，停止向量化: processId={}", processId);
-                    return;
-                }
-                
-                // 直接向量化
-                try {
-                    //更新状态为向量化，并传递总数信息
-                    Map<String, Object> vectorizingData = new HashMap<>();
-                    vectorizingData.put("totalCount", chunkList.size());
-                    vectorizingData.put("currentIndex", 0);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.VECTORIZING, vectorizingData);
-                    
-        StoreEmbeddingBo storeEmbeddingBo = new StoreEmbeddingBo();
-        storeEmbeddingBo.setKid(kid);
-        storeEmbeddingBo.setDocId(docId);
-        storeEmbeddingBo.setFids(fids);
-        storeEmbeddingBo.setChunkList(chunkList);
-        storeEmbeddingBo.setVectorStoreName(knowledgeInfoVo.getVectorModelName());
-        storeEmbeddingBo.setEmbeddingModelName(knowledgeInfoVo.getEmbeddingModelName());
-        storeEmbeddingBo.setApiKey(chatModelVo.getApiKey());
-        storeEmbeddingBo.setBaseUrl(chatModelVo.getApiHost());
-                    
-                    //传递processId用于进度更新
-                    storeEmbeddingBo.setProcessId(processId);
-                    vectorStoreService.storeEmbeddings(storeEmbeddingBo, attachProcessService);
-                    
-                    //最后检查一次是否已取消
-                    processCheck = attachProcessService.getCurrentStatus(processId);
-                    if (ProcessingStatus.CANCELLED.getCode().equals(processCheck.getCurrentStatus())) {
-                        log.info("处理任务已取消，停止更新完成状态: processId={}", processId);
-                        return;
-                    }
-                    
-                    attachProcessService.updateStatus(processId, ProcessingStatus.COMPLETED, null);
-                } catch (Exception e) {
-                    log.error("向量化存储失败: {}", e.getMessage(), e);
-                    attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
-                            "向量化存储失败: " + e.getMessage());
-                    throw e;
-                }
-            } else {
-                // 新逻辑：进入用户审阅匹配结果状态
-                Map<String, Object> statusData = new HashMap<>();
-                statusData.put("matchingResults", matchingResults);
-                attachProcessService.updateStatus(processId, ProcessingStatus.USER_REVIEW_MATCHING, statusData);
+
+                attachProcessService.updateStatus(processId, ProcessingStatus.COMPLETED, null);
+                log.info("[storeContent] 处理完成: kid={}, docId={}", kid, docId);
+            } catch (Exception e) {
+                log.error("[storeContent] 向量化存储失败: {}", e.getMessage(), e);
+                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED,
+                        "向量化存储失败: " + e.getMessage());
+                throw e;
             }
         } catch (ServiceException e) {
             // ServiceException已经更新了状态，直接抛出
             throw e;
         } catch (Exception e) {
-            log.error("附件处理过程中发生未预期的错误: processId={}, error={}", processId, e.getMessage(), e);
+            log.error("[storeContent] 附件处理过程中发生未预期的错误: processId={}, error={}", processId, e.getMessage(), e);
             try {
-                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED, 
+                attachProcessService.updateStatus(processId, ProcessingStatus.FAILED,
                         "处理过程中发生错误: " + e.getMessage());
             } catch (Exception updateEx) {
-                log.error("更新失败状态时发生错误: {}", updateEx.getMessage(), updateEx);
+                log.error("[storeContent] 更新失败状态时发生错误: {}", updateEx.getMessage(), updateEx);
             }
             throw new ServiceException("附件处理失败: " + e.getMessage());
         }
     }
+
     
     /**
      * 获取条目标题
@@ -1577,4 +1288,125 @@ public class KnowledgeInfoServiceImpl implements IKnowledgeInfoService {
         }
     }
 
+    @Override
+    public KnowledgeStorageStatsVo getStorageStats(String kid) {
+        if (StringUtils.isBlank(kid)) {
+            throw new ServiceException("知识库ID不能为空");
+        }
+
+        KnowledgeInfoVo knowledgeInfo = baseMapper.selectVoByKid(kid);
+        if (knowledgeInfo == null) {
+            throw new ServiceException("知识库不存在");
+        }
+
+        KnowledgeStorageStatsVo stats = new KnowledgeStorageStatsVo();
+        stats.setKid(kid);
+
+        // ── 存储用量（全部来自真实数据，无虚构上限）──
+        Long usedBytes = Optional.ofNullable(knowledgeInfo.getDataSize()).orElse(0L);
+        stats.setUsedBytes(usedBytes);
+
+        // ── 资产数量 ──
+        stats.setItemCount(Optional.ofNullable(knowledgeInfo.getItemCount()).orElse(0));
+        stats.setFragmentCount(Optional.ofNullable(knowledgeInfo.getFragmentCount()).orElse(0));
+        stats.setAttachCount(Optional.ofNullable(knowledgeInfo.getAttachCount()).orElse(0));
+
+        // ── 时间序列（近30天，补全每日数据点） ──
+        List<DailyCountPointVo> updateFrequency = completeDailySeries(
+                baseMapper.selectItemUpdateFrequencyByKid(kid, 30), 30);
+        stats.setUpdateFrequency(updateFrequency);
+
+        List<DailyCountPointVo> updateFrequency90d = completeDailySeries(
+                baseMapper.selectItemUpdateFrequencyByKid(kid, 90), 90);
+        stats.setUpdateFrequency90d(updateFrequency90d);
+
+        List<DailyCountPointVo> storageGrowth = completeDailySeries(
+                baseMapper.selectAttachGrowthByKid(kid, 30), 30);
+        stats.setStorageGrowth(storageGrowth);
+
+        // ── 更新活跃度 ──
+        long todayUpdates  = getLastDayCount(updateFrequency, 0);
+        long weekUpdates   = sumLastDays(updateFrequency, 7);
+        long monthUpdates  = sumLastDays(updateFrequency, 30);
+        stats.setTodayUpdates((int) todayUpdates);
+        stats.setWeekUpdates((int) weekUpdates);
+        stats.setMonthUpdates((int) monthUpdates);
+        stats.setAvgDailyUpdates(round2(monthUpdates / 30.0));
+
+        // ── 增长趋势（基于近7天文档新增数估算字节增量） ──
+        long growth7dBytes = estimateGrowthBytes(usedBytes, storageGrowth, 7);
+        stats.setGrowth7dBytes(growth7dBytes);
+        stats.setAvgDailyGrowthBytes(Math.max(Math.round(growth7dBytes / 7.0), 0L));
+
+        return stats;
+    }
+
+    private double round2(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private List<DailyCountPointVo> completeDailySeries(List<DailyCountPointVo> raw, int days) {
+        Map<String, Long> map = new HashMap<>();
+        if (raw != null) {
+            for (DailyCountPointVo point : raw) {
+                if (point != null && StringUtils.isNotBlank(point.getDate())) {
+                    map.put(point.getDate(), Optional.ofNullable(point.getCount()).orElse(0L));
+                }
+            }
+        }
+        List<DailyCountPointVo> completed = new ArrayList<>();
+        LocalDate start = LocalDate.now().minusDays(days - 1L);
+        for (int i = 0; i < days; i++) {
+            LocalDate date = start.plusDays(i);
+            String dateText = date.format(DAY_FORMATTER);
+            DailyCountPointVo point = new DailyCountPointVo();
+            point.setDate(dateText);
+            point.setCount(map.getOrDefault(dateText, 0L));
+            completed.add(point);
+        }
+        return completed;
+    }
+
+    private long sumLastDays(List<DailyCountPointVo> series, int days) {
+        if (series == null || series.isEmpty() || days <= 0) {
+            return 0L;
+        }
+        int start = Math.max(series.size() - days, 0);
+        long sum = 0L;
+        for (int i = start; i < series.size(); i++) {
+            sum += Optional.ofNullable(series.get(i).getCount()).orElse(0L);
+        }
+        return sum;
+    }
+
+    private long getLastDayCount(List<DailyCountPointVo> series, int offsetFromToday) {
+        if (series == null || series.isEmpty()) {
+            return 0L;
+        }
+        int index = series.size() - 1 - offsetFromToday;
+        if (index < 0 || index >= series.size()) {
+            return 0L;
+        }
+        return Optional.ofNullable(series.get(index).getCount()).orElse(0L);
+    }
+
+    private long estimateGrowthBytes(Long usedBytes, List<DailyCountPointVo> growthSeries, int days) {
+        if (usedBytes == null || usedBytes <= 0) {
+            return 0L;
+        }
+        if (growthSeries == null || growthSeries.isEmpty()) {
+            return 0L;
+        }
+        long attachCountInWindow = sumLastDays(growthSeries, days);
+        if (attachCountInWindow <= 0) {
+            return 0L;
+        }
+        // 以知识库总已用空间/总文档数估算每文档平均占用，再乘以近窗口文档增长
+        long totalAttachCount = growthSeries.stream().map(DailyCountPointVo::getCount).filter(Objects::nonNull).mapToLong(Long::longValue).sum();
+        if (totalAttachCount <= 0) {
+            totalAttachCount = attachCountInWindow;
+        }
+        long avgPerAttach = Math.max(usedBytes / Math.max(totalAttachCount, 1L), 0L);
+        return avgPerAttach * attachCountInWindow;
+    }
 }

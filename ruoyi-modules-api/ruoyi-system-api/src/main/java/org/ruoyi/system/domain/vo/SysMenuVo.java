@@ -1,6 +1,5 @@
 package org.ruoyi.system.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.system.domain.SysMenu;
 
@@ -17,7 +16,6 @@ import java.util.List;
  * @author Michelle.Chung
  */
 @Data
-@AutoMapper(target = SysMenu.class)
 public class SysMenuVo implements Serializable {
 
     @Serial

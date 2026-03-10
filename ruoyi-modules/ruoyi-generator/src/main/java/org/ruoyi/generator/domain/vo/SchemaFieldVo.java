@@ -1,10 +1,8 @@
 package org.ruoyi.generator.domain.vo;
 
 
-import io.github.linpeilie.annotations.AutoMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.ruoyi.generator.domain.SchemaField;
 
 import java.io.Serializable;
 
@@ -15,7 +13,6 @@ import java.io.Serializable;
  * @date 2024-01-01
  */
 @Data
-@AutoMapper(target = SchemaField.class)
 public class SchemaFieldVo implements Serializable {
 
     /**

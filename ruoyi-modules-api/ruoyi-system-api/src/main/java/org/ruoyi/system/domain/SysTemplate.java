@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,6 +14,7 @@ import java.util.Map;
 /**
  * 模板配置对象 sys_template
  */
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysTemplateVo.class)
 @Data
 @EqualsAndHashCode(callSuper = false)
 @TableName("sys_template")

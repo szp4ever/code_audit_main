@@ -2,7 +2,6 @@ package org.ruoyi.aihuman.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.aihuman.domain.AihumanConfig;
 import org.ruoyi.common.excel.annotation.ExcelDictFormat;
@@ -20,7 +19,6 @@ import java.time.LocalDateTime;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = AihumanConfig.class)
 public class AihumanConfigVo implements Serializable {
 
     private Integer id;

@@ -2,15 +2,69 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.ruoyi.mapper.KnowledgeInfoMapper">
-    <select id="selectByKid" resultType="org.ruoyi.domain.KnowledgeInfo">
+<mapper namespace="org.ruoyi.knowledge.curation.mapper.KnowledgeInfoMapper">
+
+    <!-- 根据 kid 查询知识库（返回实体） -->
+    <select id="selectByKid" resultType="org.ruoyi.knowledge.curation.domain.KnowledgeInfo">
         SELECT *
         FROM knowledge_info
         WHERE kid = #{kid}
     </select>
-    <select id="selectVoByKid" resultType="org.ruoyi.domain.vo.KnowledgeInfoVo">
-        SELECT *
-        FROM knowledge_info
-        WHERE kid = #{kid}
+
+    <!-- 根据 kid 查询知识库 VO（实时计算统计字段） -->
+    <select id="selectVoByKid" resultType="org.ruoyi.knowledge.curation.domain.vo.KnowledgeInfoVo">
+        SELECT
+            ki.id,
+            ki.kid,
+            ki.uid,
+            ki.kname,
+            ki.share,
+            ki.description,
+            ki.category,
+            ki.data_size as dataSize,
+            ki.knowledge_separator as knowledgeSeparator,
+            ki.question_separator as questionSeparator,
+            ki.overlap_char as overlapChar,
+            ki.retrieve_limit as retrieveLimit,
+            ki.text_block_size as textBlockSize,
+            ki.vector_model_name as vectorModelName,
+            ki.embedding_model_id as embeddingModelId,
+            ki.embedding_model_name as embeddingModelName,
+            ki.system_prompt as systemPrompt,
+            ki.remark,
+            ki.create_time as createTime,
+            ki.update_time as updateTime,
+            ki.create_by as createBy,
+            ki.update_by as updateBy,
+            ki.create_dept as createDept,
+            <!-- 实时计算统计字段（不依赖 del_flag，兼容未执行迁移的 schema） -->
+            (SELECT COUNT(*) FROM knowledge_item WHERE kid = ki.kid) as itemCount,
+            (SELECT COUNT(*) FROM knowledge_fragment WHERE kid = ki.kid) as fragmentCount,
+            (SELECT COUNT(*) FROM knowledge_attach WHERE kid = ki.kid) as attachCount
+        FROM knowledge_info ki
+        WHERE ki.kid = #{kid}
     </select>
+
+    <select id="selectItemUpdateFrequencyByKid" resultType="org.ruoyi.knowledge.curation.domain.vo.DailyCountPointVo">
+        SELECT
+            DATE_FORMAT(update_time, '%Y-%m-%d') AS date,
+            COUNT(1) AS count
+        FROM knowledge_item
+        WHERE kid = #{kid}
+          AND update_time >= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+        ORDER BY DATE_FORMAT(update_time, '%Y-%m-%d')
+    </select>
+
+    <select id="selectAttachGrowthByKid" resultType="org.ruoyi.knowledge.curation.domain.vo.DailyCountPointVo">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
+            COUNT(1) AS count
+        FROM knowledge_attach
+        WHERE kid = #{kid}
+          AND create_time >= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY DATE_FORMAT(create_time, '%Y-%m-%d')
+    </select>
+
 </mapper>

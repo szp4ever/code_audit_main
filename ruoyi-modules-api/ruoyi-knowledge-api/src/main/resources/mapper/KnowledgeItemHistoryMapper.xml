@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.knowledge.curation.mapper.KnowledgeItemHistoryMapper">
+
+    <resultMap id="KnowledgeItemHistoryVoResult" type="org.ruoyi.knowledge.curation.domain.vo.KnowledgeItemHistoryVo">
+        <id property="id" column="id"/>
+        <result property="itemUuid" column="item_uuid"/>
+        <result property="version" column="version"/>
+        <result property="isCurrent" column="is_current"/>
+        <result property="title" column="title"/>
+        <result property="summary" column="summary"/>
+        <result property="vulnerabilityType" column="vulnerability_type"/>
+        <result property="language" column="language"/>
+        <result property="severity" column="severity"/>
+        <result property="ruleId" column="rule_id"/>
+        <result property="problemDescription" column="problem_description"/>
+        <result property="fixSolution" column="fix_solution"/>
+        <result property="exampleCode" column="example_code"/>
+        <result property="changeReason" column="change_reason"/>
+        <result property="changeType" column="change_type"/>
+        <result property="changedBy" column="changed_by"/>
+        <result property="changedByName" column="changed_by_name"/>
+        <result property="changedAt" column="changed_at"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectByItemUuid" resultMap="KnowledgeItemHistoryVoResult">
+        SELECT id, item_uuid, version, is_current, title, summary, vulnerability_type,
+               language, severity, rule_id, problem_description, fix_solution, example_code,
+               change_reason, change_type, changed_by, changed_by_name, changed_at, remark
+        FROM knowledge_item_history
+        WHERE item_uuid = #{itemUuid}
+        ORDER BY version DESC
+    </select>
+
+    <select id="selectByItemUuidAndVersion" resultType="org.ruoyi.knowledge.curation.domain.KnowledgeItemHistory">
+        SELECT *
+        FROM knowledge_item_history
+        WHERE item_uuid = #{itemUuid}
+          AND version = #{version}
+        LIMIT 1
+    </select>
+
+</mapper>

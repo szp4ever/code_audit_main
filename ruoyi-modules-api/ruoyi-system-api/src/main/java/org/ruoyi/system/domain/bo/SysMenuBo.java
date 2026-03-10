@@ -19,8 +19,8 @@ import org.ruoyi.system.domain.SysMenu;
  */
 
 @Data
+@AutoMapper(target = SysMenu.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysMenu.class, reverseConvertGenerate = false)
 public class SysMenuBo extends BaseEntity {
 
     /**

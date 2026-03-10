@@ -17,8 +17,8 @@ import org.ruoyi.system.domain.SysNoticeState;
  * @date 2024-05-11
  */
 @Data
+@AutoMapper(target = SysNoticeState.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysNoticeState.class, reverseConvertGenerate = false)
 public class SysNoticeStateBo extends BaseEntity {
 
     /**

@@ -517,25 +517,38 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
      * @return 结果
      */
     @Override
+    /**
+     * 删除用户信息（幂等设计）
+     * <p>
+     * 最佳实践：
+     * 1. 删除操作天然幂等 - 无论用户是否存在，最终状态都是"已删除"
+     * 2. 不应因记录不存在而抛异常，符合幂等语义
+     * 3. 关联表删除也是幂等的（删除不存在的关联不会报错）
+     *
+     * @param userId 用户ID
+     * @return 实际删除的记录数（0表示用户本来不存在）
+     */
     @Transactional(rollbackFor = Exception.class)
     public int deleteUserById(Long userId) {
-        // 删除用户与角色关联
+        // 删除用户与角色关联（幂等：无关联则不操作）
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
-        // 删除用户与岗位表
+        // 删除用户与岗位关联（幂等：无关联则不操作）
         userPostMapper.delete(new LambdaQueryWrapper<SysUserPost>().eq(SysUserPost::getUserId, userId));
-        // 防止更新失败导致的数据删除
+        // 删除用户（幂等：用户不存在则返回0）
         int flag = baseMapper.deleteById(userId);
-        if (flag < 1) {
-            throw new ServiceException("删除用户失败!");
-        }
         return flag;
     }
 
     /**
-     * 批量删除用户信息
+     * 批量删除用户信息（幂等设计）
+     * <p>
+     * 最佳实践：
+     * 1. 批量删除也是幂等操作 - 无论用户是否存在，最终状态都是"已删除"
+     * 2. 单个用户删除失败不影响其他用户的删除
+     * 3. 返回实际删除的记录数，不强制要求至少删除1条
      *
      * @param userIds 需要删除的用户ID
-     * @return 结果
+     * @return 实际删除的记录数
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -545,16 +558,14 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             checkUserDataScope(userId);
         }
         List<Long> ids = List.of(userIds);
-        // 删除用户与角色关联
+        // 删除用户与角色关联（幂等）
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().in(SysUserRole::getUserId, ids));
-        // 删除用户与岗位表
+        // 删除用户与岗位关联（幂等）
         userPostMapper.delete(new LambdaQueryWrapper<SysUserPost>().in(SysUserPost::getUserId, ids));
-        // 防止更新失败导致的数据删除
-        int flag = baseMapper.deleteBatchIds(ids);
-        if (flag < 1) {
-            throw new ServiceException("删除用户失败!");
-        }
-        return flag;
+        // 批量删除用户（幂等：不存在的用户返回0）
+        // 使用 deleteByIds 替代废弃的 deleteBatchIds
+        int deletedCount = baseMapper.deleteByIds(ids);
+        return deletedCount;
     }
 
     @Cacheable(cacheNames = CacheNames.SYS_USER_NAME, key = "#userId")

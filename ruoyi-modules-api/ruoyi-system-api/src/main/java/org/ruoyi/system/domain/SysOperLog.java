@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.util.Date;
  * @author Lion Li
  */
 
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysOperLogVo.class)
 @Data
 @TableName("sys_oper_log")
 public class SysOperLog implements Serializable {

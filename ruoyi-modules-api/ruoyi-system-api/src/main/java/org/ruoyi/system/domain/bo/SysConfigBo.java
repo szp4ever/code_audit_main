@@ -18,8 +18,8 @@ import org.ruoyi.system.domain.SysConfig;
  */
 
 @Data
+@AutoMapper(target = SysConfig.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysConfig.class, reverseConvertGenerate = false)
 public class SysConfigBo extends BaseEntity {
 
     /**

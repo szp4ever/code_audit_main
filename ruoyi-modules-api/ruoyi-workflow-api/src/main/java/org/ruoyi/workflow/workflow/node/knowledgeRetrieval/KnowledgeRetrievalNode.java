@@ -11,10 +11,10 @@ import org.ruoyi.workflow.workflow.WfState;
 import org.ruoyi.workflow.workflow.WorkflowUtil;
 import org.ruoyi.workflow.workflow.data.NodeIOData;
 import org.ruoyi.workflow.workflow.node.AbstractWfNode;
-import org.ruoyi.service.VectorStoreService;
-import org.ruoyi.service.IKnowledgeInfoService;
-import org.ruoyi.domain.bo.QueryVectorBo;
-import org.ruoyi.domain.vo.KnowledgeInfoVo;
+import org.ruoyi.knowledge.ingestion.service.VectorStoreService;
+import org.ruoyi.knowledge.curation.service.IKnowledgeInfoService;
+import org.ruoyi.knowledge.ingestion.domain.bo.QueryVectorBo;
+import org.ruoyi.knowledge.curation.domain.vo.KnowledgeInfoVo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -216,9 +216,8 @@ public class KnowledgeRetrievalNode extends AbstractWfNode {
             VectorStoreService vectorStoreService = SpringUtil.getBean(VectorStoreService.class);
             IKnowledgeInfoService knowledgeInfoService = SpringUtil.getBean(IKnowledgeInfoService.class);
             
-            // 获取知识库信息以获取embedding模型配置
-            Long knowledgeId = Long.parseLong(config.getKnowledgeId());
-            KnowledgeInfoVo knowledgeInfo = knowledgeInfoService.queryById(knowledgeId);
+            // 获取知识库信息以获取embedding模型配置（使用kid查询）
+            KnowledgeInfoVo knowledgeInfo = knowledgeInfoService.queryByKid(config.getKnowledgeId());
             
             if (knowledgeInfo == null) {
                 log.error("Knowledge base not found: {}", config.getKnowledgeId());

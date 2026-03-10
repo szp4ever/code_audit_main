@@ -20,8 +20,8 @@ import org.ruoyi.system.domain.SysOssConfig;
  */
 
 @Data
+@AutoMapper(target = SysOssConfig.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysOssConfig.class, reverseConvertGenerate = false)
 public class SysOssConfigBo extends BaseEntity {
 
     /**

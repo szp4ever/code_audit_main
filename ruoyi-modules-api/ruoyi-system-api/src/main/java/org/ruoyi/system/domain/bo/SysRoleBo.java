@@ -21,8 +21,8 @@ import org.ruoyi.system.domain.SysRole;
 
 @Data
 @NoArgsConstructor
+@AutoMapper(target = SysRole.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysRole.class, reverseConvertGenerate = false)
 public class SysRoleBo extends BaseEntity {
 
     /**

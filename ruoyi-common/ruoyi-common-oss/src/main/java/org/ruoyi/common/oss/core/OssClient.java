@@ -57,6 +57,15 @@ public class OssClient {
             } else {
                 clientConfig.setProtocol(Protocol.HTTP);
             }
+            // 禁用系统代理，避免被环境变量 http_proxy/https_proxy 影响
+            clientConfig.setProxyHost(null);
+            clientConfig.setProxyPort(0);
+            // 激进连接池配置：大幅提升并发元数据/文件操作吞吐
+            clientConfig.setMaxConnections(200);
+            clientConfig.setConnectionTimeout(30_000);
+            clientConfig.setSocketTimeout(60_000);
+            clientConfig.setRequestTimeout(120_000);
+            clientConfig.setMaxErrorRetry(3);
             AmazonS3ClientBuilder build = AmazonS3Client.builder()
                     .withEndpointConfiguration(endpointConfig)
                     .withClientConfiguration(clientConfig)
@@ -164,13 +173,79 @@ public class OssClient {
 
     /**
      * 获取文件元数据
+     * 使用 HEAD 请求（getObjectMetadata），不下载文件内容
      *
      * @param path 完整文件路径
      */
     public ObjectMetadata getObjectMetadata(String path) {
         path = path.replace(getUrl() + "/", "");
-        S3Object object = client.getObject(properties.getBucketName(), path);
-        return object.getObjectMetadata();
+        return client.getObjectMetadata(properties.getBucketName(), path);
+    }
+
+    /**
+     * 批量获取指定前缀下所有对象的大小（一次 LIST 请求）
+     * 返回 Map<objectKey, sizeBytes>
+     *
+     * @param prefix 对象键前缀（如 "2026/03/"），传 null 或空串则列出整个桶
+     */
+    public java.util.Map<String, Long> listObjectSizes(String prefix) {
+        java.util.Map<String, Long> result = new java.util.HashMap<>();
+        com.amazonaws.services.s3.model.ListObjectsV2Request req =
+            new com.amazonaws.services.s3.model.ListObjectsV2Request()
+                .withBucketName(properties.getBucketName())
+                .withMaxKeys(1000);
+        if (prefix != null && !prefix.isEmpty()) {
+            req.withPrefix(prefix);
+        }
+        com.amazonaws.services.s3.model.ListObjectsV2Result listing;
+        do {
+            listing = client.listObjectsV2(req);
+            for (com.amazonaws.services.s3.model.S3ObjectSummary summary : listing.getObjectSummaries()) {
+                result.put(summary.getKey(), summary.getSize());
+            }
+            req.setContinuationToken(listing.getNextContinuationToken());
+        } while (listing.isTruncated());
+        return result;
+    }
+
+    /**
+     * 批量获取指定对象键列表的大小
+     * 先用 listObjects 拿到桶内所有对象大小，再按 keys 过滤
+     * 适用于一次性查询多个文件大小的场景（比逐个 HEAD 快得多）
+     *
+     * @param objectKeys 需要查询的对象键列表
+     */
+    public java.util.Map<String, Long> batchGetObjectSizes(java.util.Collection<String> objectKeys) {
+        if (objectKeys == null || objectKeys.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        // 提取公共前缀以缩小 LIST 范围
+        String commonPrefix = findCommonPrefix(objectKeys);
+        java.util.Map<String, Long> allSizes = listObjectSizes(commonPrefix);
+        java.util.Set<String> keySet = new java.util.HashSet<>(objectKeys);
+        java.util.Map<String, Long> result = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, Long> entry : allSizes.entrySet()) {
+            if (keySet.contains(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private String findCommonPrefix(java.util.Collection<String> keys) {
+        if (keys.isEmpty()) return "";
+        String first = keys.iterator().next();
+        String prefix = first;
+        for (String key : keys) {
+            while (!key.startsWith(prefix)) {
+                int lastSlash = prefix.lastIndexOf('/');
+                if (lastSlash <= 0) return "";
+                prefix = prefix.substring(0, lastSlash + 1);
+            }
+        }
+        // 只保留到最后一个 / 的部分
+        int lastSlash = prefix.lastIndexOf('/');
+        return lastSlash > 0 ? prefix.substring(0, lastSlash + 1) : "";
     }
 
     public InputStream getObjectContent(String path) {

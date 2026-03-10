@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.io.Serial;
  * @author Lion Li
  * @date 2024-05-11
  */
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysNoticeStateVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_notice_state")

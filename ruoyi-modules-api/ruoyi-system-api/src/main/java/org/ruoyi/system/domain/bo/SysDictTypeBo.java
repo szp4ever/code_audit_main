@@ -19,8 +19,8 @@ import org.ruoyi.system.domain.SysDictType;
  */
 
 @Data
+@AutoMapper(target = SysDictType.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysDictType.class, reverseConvertGenerate = false)
 public class SysDictTypeBo extends BaseEntity {
 
     /**

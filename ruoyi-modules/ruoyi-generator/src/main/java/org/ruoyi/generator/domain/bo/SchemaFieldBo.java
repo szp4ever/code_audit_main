@@ -1,12 +1,10 @@
 package org.ruoyi.generator.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
-import org.ruoyi.generator.domain.SchemaField;
 
 import java.io.Serializable;
 
@@ -17,7 +15,6 @@ import java.io.Serializable;
  * @date 2024-01-01
  */
 @Data
-@AutoMapper(target = SchemaField.class, reverseConvertGenerate = false)
 public class SchemaFieldBo implements Serializable {
 
     /**

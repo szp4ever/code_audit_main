@@ -4,7 +4,6 @@ import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.common.excel.annotation.ExcelDictFormat;
 import org.ruoyi.common.excel.convert.ExcelDictConvert;
@@ -16,7 +15,6 @@ import java.util.Date;
 
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = SysTemplate.class)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class SysTemplateVo implements Serializable {
 

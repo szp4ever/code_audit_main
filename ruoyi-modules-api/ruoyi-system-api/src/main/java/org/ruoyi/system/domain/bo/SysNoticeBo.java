@@ -19,8 +19,8 @@ import org.ruoyi.system.domain.SysNotice;
  */
 
 @Data
+@AutoMapper(target = SysNotice.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysNotice.class, reverseConvertGenerate = false)
 public class SysNoticeBo extends BaseEntity {
 
     /**

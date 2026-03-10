@@ -167,6 +167,19 @@
             width: 60%;
             color: #333;
         }
+        .meta-table-cvss td:nth-child(6n+1),
+        .meta-table-cvss td:nth-child(6n+3),
+        .meta-table-cvss td:nth-child(6n+5) {
+            width: 13%;
+            color: #666;
+            white-space: nowrap;
+        }
+        .meta-table-cvss td:nth-child(6n+2),
+        .meta-table-cvss td:nth-child(6n+4),
+        .meta-table-cvss td:nth-child(6n+6) {
+            width: 20%;
+            color: #333;
+        }
         .content-section {
             margin-bottom: 12px;
         }
@@ -314,7 +327,11 @@
         <h3 class="item-title">$index. $utils.escapeHtml($title)</h3>
         <div class="tags-container">
             #if($severity && $severity != "")
-                #set($severityLabel = $dictService.getDictLabel("knowledge_severity", $severity))
+                #set($severityKey = $severity.toLowerCase())
+                #set($severityLabel = $dictService.getDictLabel("knowledge_severity", $severityKey))
+                #if(!$severityLabel || $severityLabel == "")
+                    #set($severityLabel = $severity)
+                #end
                 <span class="tag tag-severity" style="background-color: $severityColor;">$utils.escapeHtml($severityLabel)</span>
             #end
             #if($item.language && $item.language != "")
@@ -370,7 +387,7 @@
                 #if($cvssMeta.size() > 0)
                     <div style="margin-bottom: 8px;">
                         <div class="meta-title">CVSS评分</div>
-                        <table class="meta-table">
+                        <table class="meta-table meta-table-cvss">
                             #set($colIndex = 0)
                             #foreach($entry in $cvssMeta.entrySet())
                                 #if($colIndex % 6 == 0)

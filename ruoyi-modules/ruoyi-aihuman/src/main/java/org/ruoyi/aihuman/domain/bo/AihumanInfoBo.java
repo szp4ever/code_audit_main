@@ -1,6 +1,5 @@
 package org.ruoyi.aihuman.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.aihuman.domain.AihumanInfo;
 
@@ -14,8 +13,6 @@ import java.time.LocalDateTime;
  * @date Fri Sep 26 20:03:06 GMT+08:00 2025
  */
 @Data
-
-@AutoMapper(target = AihumanInfo.class, reverseConvertGenerate = false)
 public class AihumanInfoBo implements Serializable {
 
     private Long id;
