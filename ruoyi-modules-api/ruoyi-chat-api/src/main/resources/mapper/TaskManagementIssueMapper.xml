@@ -38,6 +38,15 @@
             create_time desc
     </select>
 
+    <update id="updateStatusBatch">
+        UPDATE task_management_issue
+        SET is_false_positive = #{status}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <insert id="batchInsertIssues">
         insert into task_management_issue(task_id, file_name, issue_name, severity, line_number, 
                                          description, fix_suggestion, create_time, del_flag)

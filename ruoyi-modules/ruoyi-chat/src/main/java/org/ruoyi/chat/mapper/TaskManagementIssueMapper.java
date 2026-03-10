@@ -26,4 +26,6 @@ public interface TaskManagementIssueMapper extends BaseMapperPlus<TaskManagement
     }
 
     List<Map<String, Object>> selectSeverityCountByTaskId(@Param("taskId") Long taskId);
+
+    int updateStatusBatch(@Param("ids") List<Long> ids, @Param("status") Integer status);
 }

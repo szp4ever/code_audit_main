@@ -1,6 +1,7 @@
 package org.ruoyi.chat.service;
 
 import org.ruoyi.chat.domain.TaskManagement;
+import org.ruoyi.chat.domain.dto.FalsePositiveUpdateReqDTO;
 import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
@@ -116,6 +117,8 @@ public interface ITaskManagementService {
      * 获取任务实时数量
      */
     TaskRealTimeCountVO getTaskRealTimeCount();
+
+    void updateFalsePositiveStatus(FalsePositiveUpdateReqDTO req);
 
     /**
      *  按时间范围查询代码规范检查通过率

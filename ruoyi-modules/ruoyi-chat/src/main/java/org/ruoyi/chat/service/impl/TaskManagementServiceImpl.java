@@ -3,6 +3,7 @@ package org.ruoyi.chat.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.TaskManagementFile;
 import org.ruoyi.chat.domain.TaskManagementTag;
 import org.ruoyi.chat.domain.TaskManagementIssue;
+import org.ruoyi.chat.domain.dto.FalsePositiveUpdateReqDTO;
 import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.chat.mapper.TaskManagementFileMapper;
 import org.ruoyi.chat.mapper.TaskManagementIssueMapper;
@@ -50,6 +52,7 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     private final TaskManagementTagMapper taskManagementTagMapper;
     private final TaskManagementIssueMapper taskManagementIssueMapper;
     private final ITaskProcessingService taskProcessingService;
+    private final TaskManagementIssueMapper issueMapper;
 
     /**
      * 创建任务
@@ -496,63 +499,158 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         return realTimeCountVO;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateFalsePositiveStatus(FalsePositiveUpdateReqDTO req) {
+        // 1. 批量标记为误报 (is_false_positive = 1)
+        if (req.getMarkIds() != null && !req.getMarkIds().isEmpty()) {
+            LambdaUpdateWrapper<TaskManagementIssue> wrapper = new LambdaUpdateWrapper<>();
+            wrapper.in(TaskManagementIssue::getId, req.getMarkIds())
+                    .set(TaskManagementIssue::getIsFalsePositive, 1);
+            issueMapper.update(null, wrapper); // 执行更新
+        }
+
+        // 2. 批量恢复正常 (is_false_positive = 0)
+        if (req.getRestoreIds() != null && !req.getRestoreIds().isEmpty()) {
+            LambdaUpdateWrapper<TaskManagementIssue> wrapper = new LambdaUpdateWrapper<>();
+            wrapper.in(TaskManagementIssue::getId, req.getRestoreIds())
+                    .set(TaskManagementIssue::getIsFalsePositive, 0);
+            issueMapper.update(null, wrapper); // 执行更新
+        }
+
+        if (req.getTaskId() != null) {
+            this.calculateAndSaveTaskMetrics(req.getTaskId());
+        }
+    }
+
+    private void recalculateTaskScore(Long taskId) {
+        // 1. 查询该任务下所有的漏洞记录 [cite: 13, 15]
+        // 注意：这里需要包含被标记为误报的，以便后续过滤
+        List<TaskManagementIssue> allIssues = issueMapper.selectList(
+                new LambdaQueryWrapper<TaskManagementIssue>()
+                        .select(TaskManagementIssue::getId,
+                                TaskManagementIssue::getTaskId,
+                                TaskManagementIssue::getSeverity,
+                                TaskManagementIssue::getIsFalsePositive) // 只选需要的计分字段
+                        .eq(TaskManagementIssue::getTaskId, taskId)
+        );
+
+        // 2. 过滤掉误报的漏洞，只保留“真实”漏洞进行计分 [cite: 13, 15]
+        List<TaskManagementIssue> realIssues = allIssues.stream()
+                .filter(issue -> issue.getIsFalsePositive() == null || !issue.getIsFalsePositive())
+                .collect(Collectors.toList());
+
+        // 3. 执行计分逻辑 (这里是一个示例算法，请根据你实际的业务权重调整) [cite: 13, 15]
+        double newScore = 100.0;
+        int criticalCount = 0;
+        int highCount = 0;
+        int mediumCount = 0;
+        int lowCount = 0;
+
+        for (TaskManagementIssue issue : realIssues) {
+            String severity = issue.getSeverity();
+            if ("严重".equals(severity)) {
+                newScore -= 15.0; // 严重漏洞扣15分
+                criticalCount++;
+            } else if ("高".equals(severity)) {
+                newScore -= 10.0; // 高危漏洞扣10分
+                highCount++;
+            } else if ("中".equals(severity)) {
+                newScore -= 5.0;  // 中危漏洞扣5分
+                mediumCount++;
+            } else if ("低".equals(severity)) {
+                newScore -= 2.0;  // 低危漏洞扣2分
+                lowCount++;
+            }
+        }
+
+        // 确保分数在 0-100 之间 [cite: 13, 15]
+        newScore = Math.max(0, Math.min(100, newScore));
+
+        // 4. 更新任务主表 (task_management) 的分数值和统计字段
+        TaskManagement task = new TaskManagement();
+        task.setId(taskId);
+        task.setOverallScore(BigDecimal.valueOf(newScore)); // 假设你的任务表分数统计字段是 overallScore
+        // 如果任务表里还有冗余的统计字段，也可以一并更新
+        // task.setVulnerabilityNum(realIssues.size());
+
+        taskManagementMapper.updateById(task);
+
+        log.info("任务 ID: {} 评分已重算。排除误报后真实漏洞数: {}, 最终得分: {}", taskId, realIssues.size(), newScore);
+    }
+
     /**
      * 获取任务漏洞详情
      */
     @Override
     public TaskVulnerabilityDetailVo getTaskVulnerabilities(Long taskId) {
-        // 查询任务信息
-
-        calculateAndSaveTaskMetrics(taskId);
+        // 1. 查出主表任务信息（为了拿最新的分数和规范通过率等）
         TaskManagement task = taskManagementMapper.selectById(taskId);
-        if (task == null) {
-            return null;
-        }
 
-        // 查询issues列表
-        List<TaskManagementIssue> issues = taskManagementIssueMapper.selectIssuesByTaskId(taskId);
+        // 2. 查出该任务的【所有】漏洞
+        List<TaskManagementIssue> allIssues = issueMapper.selectList(
+                new LambdaQueryWrapper<>(TaskManagementIssue.class)
+                        .select(info -> !info.getColumn().equals("create_by") &&
+                                !info.getColumn().equals("create_time") &&
+                                !info.getColumn().equals("update_by") &&
+                                !info.getColumn().equals("update_time") &&
+                                !info.getColumn().equals("create_dept"))
+                        .eq(TaskManagementIssue::getTaskId, taskId)
+        );
 
-        // 统计severity数量
-        List<Map<String, Object>> severityStats = taskManagementIssueMapper.selectSeverityCountByTaskId(taskId);
-        Map<String, Integer> severityCount = new HashMap<>();
-        if (CollUtil.isNotEmpty(severityStats)) {
-            for (Map<String, Object> stat : severityStats) {
-                String severity = String.valueOf(stat.get("severity")).toLowerCase();
-                Integer count = ((Number) stat.get("count")).intValue();
-                severityCount.put(severity, count);
-            }
-        }
+        // 3. 过滤出【真实漏洞】（不含误报）
+        List<TaskManagementIssue> realIssues = allIssues.stream()
+                .filter(issue -> issue.getIsFalsePositive() == null || !issue.getIsFalsePositive())
+                .collect(Collectors.toList());
 
-        // 转换为VO
         TaskVulnerabilityDetailVo detailVo = new TaskVulnerabilityDetailVo();
         detailVo.setTaskId(taskId);
         detailVo.setTaskTitle(task.getTitle());
-        detailVo.setTotalCount(issues != null ? issues.size() : 0);
-        detailVo.setSeverityCount(severityCount);
-        detailVo.setOverallScore(task.getOverallScore());
-        detailVo.setComplianceRate(task.getComplianceRate());
-        detailVo.setPassedFileCount(task.getPassedFileCount());
-        detailVo.setTotalFileCount(task.getTotalFileCount());
 
-        // 转换issues为VulnerabilityVo列表
-        List<VulnerabilityVo> vulnerabilityList = new ArrayList<>();
-        if (CollUtil.isNotEmpty(issues)) {
-            for (TaskManagementIssue issue : issues) {
-                VulnerabilityVo vulnVo = convertIssueToVulnerabilityVo(issue);
-                vulnerabilityList.add(vulnVo);
-            }
+        // 4. 重新统计总数和严重程度分布（只算真实的）
+        detailVo.setTotalCount(realIssues.size());
+        Map<String, Integer> severityCount = new HashMap<>();
+        for (TaskManagementIssue issue : realIssues) {
+            String severity = issue.getSeverity();
+            severityCount.put(severity, severityCount.getOrDefault(severity, 0) + 1);
         }
-        detailVo.setVulnerabilities(vulnerabilityList);
+        detailVo.setSeverityCount(severityCount);
 
+        // 5. ✨ 恢复丢失的：主表统计指标（分数、通过率、文件数）
+        if (task != null) {
+            detailVo.setOverallScore(task.getOverallScore());
+            detailVo.setComplianceRate(task.getComplianceRate());
+            detailVo.setPassedFileCount(task.getPassedFileCount());
+            detailVo.setTotalFileCount(task.getTotalFileCount());
+        }
 
-        List<TaskManagementFile> files = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
-        detailVo.setFileMetrics(files.stream().map(f -> {
-            TaskVulnerabilityDetailVo.FileMetricVo m = new TaskVulnerabilityDetailVo.FileMetricVo();
-            m.setFileName(f.getName());
-            m.setScore(f.getQualityScore());
-            m.setIsPassed(f.getIsPassed() != null && f.getIsPassed() == 1);
-            return m;
-        }).collect(Collectors.toList()));
+        // 6. ✨ 恢复丢失的：中间那排“各文件详情”列表
+        List<TaskManagementFile> inputFiles = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
+        if (CollUtil.isNotEmpty(inputFiles)) {
+            List<TaskVulnerabilityDetailVo.FileMetricVo> fileMetrics = inputFiles.stream().map(file -> {
+                TaskVulnerabilityDetailVo.FileMetricVo metric = new TaskVulnerabilityDetailVo.FileMetricVo();
+                metric.setFileName(file.getName());
+                metric.setScore(file.getQualityScore());
+                // 注意：如果你的 isPassed 字段是 boolean 类型：
+                metric.setIsPassed(file.getIsPassed() != null && file.getIsPassed() == 1);
+                // 如果你的 isPassed 是 Integer 类型，请改成：
+                // metric.setIsPassed(file.getIsPassed() != null && file.getIsPassed() == 1 ? 1 : 0);
+                return metric;
+            }).collect(Collectors.toList());
+
+            detailVo.setFileMetrics(fileMetrics);
+        }
+
+        // 7. ✨ 恢复丢失的：底部的漏洞具体信息
+        List<VulnerabilityVo> vulnVos = allIssues.stream().map(issue -> {
+            // 直接调用你下方的 convertIssueToVulnerabilityVo 方法，把标题描述全部拿回来
+            VulnerabilityVo vo = convertIssueToVulnerabilityVo(issue);
+            // 补充上我们的误报状态，交给前端置灰
+            vo.setIsFalsePositive(issue.getIsFalsePositive());
+            return vo;
+        }).collect(Collectors.toList());
+
+        detailVo.setVulnerabilities(vulnVos);
 
         return detailVo;
     }
@@ -612,10 +710,21 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         // 1. 获取任务下的所有输入文件
         List<TaskManagementFile> files = taskManagementFileMapper.selectFilesByTaskId(taskId, "input");
         // 2. 获取该任务发现的所有漏洞 (Issues)
-        List<TaskManagementIssue> issues = taskManagementIssueMapper.selectIssuesByTaskId(taskId);
+        List<TaskManagementIssue> issues = issueMapper.selectList(
+                new LambdaQueryWrapper<>(TaskManagementIssue.class)
+                        .select(info -> !info.getColumn().equals("create_by") &&
+                                !info.getColumn().equals("create_time") &&
+                                !info.getColumn().equals("update_by") &&
+                                !info.getColumn().equals("update_time") &&
+                                !info.getColumn().equals("create_dept"))
+                        .eq(TaskManagementIssue::getTaskId, taskId)
+        );
+        List<TaskManagementIssue> realIssues = issues.stream()
+                .filter(issue -> issue.getIsFalsePositive() == null || !issue.getIsFalsePositive())
+                .collect(Collectors.toList());
 
         // 按文件名对漏洞进行分组，方便查每个文件有多少漏洞
-        Map<String, List<TaskManagementIssue>> issuesByFile = issues.stream()
+        Map<String, List<TaskManagementIssue>> issuesByFile = realIssues.stream()
                 .filter(issue -> issue.getFileName() != null)
                 .collect(Collectors.groupingBy(TaskManagementIssue::getFileName));
 
@@ -631,17 +740,11 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
 
             // 根据你要求的严重程度进行智能扣分
             for (TaskManagementIssue issue : fileIssues) {
-                String severity = issue.getSeverity().toLowerCase();
-                if ("critical".equals(severity) || "严重".equals(severity)) {
-                    score -= 20;
-                    hasCritical = true;
-                } else if ("high".equals(severity) || "高".equals(severity)) {
-                    score -= 10;
-                } else if ("medium".equals(severity) || "中".equals(severity)) {
-                    score -= 5;
-                } else if ("low".equals(severity) || "低".equals(severity)) {
-                    score -= 2;
-                }
+                String severity = issue.getSeverity() != null ? issue.getSeverity().toLowerCase() : "";
+                if ("critical".equals(severity) || "严重".equals(severity)) { score -= 20; hasCritical = true; }
+                else if ("high".equals(severity) || "高".equals(severity)) { score -= 10; }
+                else if ("medium".equals(severity) || "中".equals(severity)) { score -= 5; }
+                else if ("low".equals(severity) || "低".equals(severity)) { score -= 2; }
             }
             score = Math.max(0, score); // 确保最低 0 分
 

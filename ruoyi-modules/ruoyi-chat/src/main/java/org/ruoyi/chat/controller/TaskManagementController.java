@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.chat.domain.TaskManagement;
 import org.ruoyi.chat.domain.TaskManagementFile;
+import org.ruoyi.chat.domain.dto.FalsePositiveUpdateReqDTO;
 import org.ruoyi.chat.domain.vo.TaskManagementVo;
 import org.ruoyi.chat.domain.vo.TaskVulnerabilityDetailVo;
 import org.ruoyi.chat.service.ITaskManagementFileService;
@@ -171,6 +172,15 @@ public class TaskManagementController extends BaseController {
     public R<TaskVulnerabilityDetailVo> getTaskVulnerabilities(@PathVariable Long taskId) {
         TaskVulnerabilityDetailVo detail = taskManagementService.getTaskVulnerabilities(taskId);
         return R.ok(detail);
+    }
+
+    /**
+     * 批量更新漏洞的误报状态
+     */
+    @PostMapping("/update-false-positive") // 如果你的类上面已经有了 @RequestMapping("/issue")，这里就不用写 /issue 了
+    public R<Void> updateFalsePositive(@RequestBody FalsePositiveUpdateReqDTO req) {
+        taskManagementService.updateFalsePositiveStatus(req);
+        return R.ok();
     }
 }
 
