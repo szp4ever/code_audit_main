@@ -233,4 +233,76 @@
         ORDER BY
         year ASC
     </select>
+
+    <!-- 活跃用户分布 -->
+    <select id="selectActiveUserDistribution" resultType="org.ruoyi.chat.domain.vo.ActiveUserDistributionItem">
+        SELECT
+        CASE 
+            WHEN HOUR(login_date) BETWEEN 0 AND 1 THEN '0-2点'
+            WHEN HOUR(login_date) BETWEEN 2 AND 3 THEN '2-4点'
+            WHEN HOUR(login_date) BETWEEN 4 AND 5 THEN '4-6点'
+            WHEN HOUR(login_date) BETWEEN 6 AND 7 THEN '6-8点'
+            WHEN HOUR(login_date) BETWEEN 8 AND 9 THEN '8-10点'
+            WHEN HOUR(login_date) BETWEEN 10 AND 11 THEN '10-12点'
+            WHEN HOUR(login_date) BETWEEN 12 AND 13 THEN '12-14点'
+            WHEN HOUR(login_date) BETWEEN 14 AND 15 THEN '14-16点'
+            WHEN HOUR(login_date) BETWEEN 16 AND 17 THEN '16-18点'
+            WHEN HOUR(login_date) BETWEEN 18 AND 19 THEN '18-20点'
+            WHEN HOUR(login_date) BETWEEN 20 AND 21 THEN '20-22点'
+            ELSE '22-24点'
+        END AS timeSlot,
+        COUNT(DISTINCT user_id) AS count
+        FROM
+        sys_user
+        WHERE
+        <if test="date != null and date != ''">
+            DATE(login_date) = #{date}
+        </if>
+        <if test="date == null or date == ''">
+            DATE(login_date) = CURRENT_DATE
+        </if>
+        GROUP BY
+        timeSlot
+        ORDER BY
+        MIN(HOUR(login_date))
+    </select>
+
+    <!-- 峰值时段分析 -->
+    <select id="selectPeakTimeAnalysis" resultType="org.ruoyi.chat.domain.vo.PeakTimeAnalysisItem">
+        SELECT
+        CASE 
+            WHEN HOUR(create_time) BETWEEN 0 AND 1 THEN '0'
+            WHEN HOUR(create_time) BETWEEN 2 AND 3 THEN '2'
+            WHEN HOUR(create_time) BETWEEN 4 AND 5 THEN '4'
+            WHEN HOUR(create_time) BETWEEN 6 AND 7 THEN '6'
+            WHEN HOUR(create_time) BETWEEN 8 AND 9 THEN '8'
+            WHEN HOUR(create_time) BETWEEN 10 AND 11 THEN '10'
+            WHEN HOUR(create_time) BETWEEN 12 AND 13 THEN '12'
+            WHEN HOUR(create_time) BETWEEN 14 AND 15 THEN '14'
+            WHEN HOUR(create_time) BETWEEN 16 AND 17 THEN '16'
+            WHEN HOUR(create_time) BETWEEN 18 AND 19 THEN '18'
+            WHEN HOUR(create_time) BETWEEN 20 AND 21 THEN '20'
+            ELSE '22'
+        END AS hour,
+        COUNT(*) AS count
+        FROM
+        task_management
+        WHERE
+        del_flag = '0'
+        AND (DATE(create_time) = #{date} OR DATE(update_time) = #{date})
+        GROUP BY
+        hour
+        ORDER BY
+        hour ASC
+    </select>
+
+    <!-- 在线用户数量 -->
+    <select id="selectOnlineUserCount" resultType="java.lang.Integer">
+        SELECT
+        COUNT(*) AS count
+        FROM
+        sys_user
+        WHERE
+        DATE(login_date) = CURRENT_DATE
+    </select>
 </mapper>

@@ -12,6 +12,7 @@ import org.ruoyi.chat.domain.vo.TaskRealTimeCountVO;
 import org.ruoyi.system.domain.vo.UserOperationHeatmapItem;
 import org.ruoyi.chat.domain.vo.*;
 import org.ruoyi.chat.service.ITaskManagementService;
+import org.ruoyi.chat.service.ISystemLoadService;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.system.service.ISysOperLogService;
@@ -36,6 +37,7 @@ public class TaskManagementStatsController extends BaseController {
 
     private final ITaskManagementService taskManagementService;
     private final ISysOperLogService sysOperLogService;
+    private final ISystemLoadService systemLoadService;
 
     /**
      * 获取任务状态统计
@@ -174,6 +176,49 @@ public class TaskManagementStatsController extends BaseController {
             @RequestParam(value = "end", required = false) String endYear) {
         List<TaskYearlyCodeQualityItem> yearlyCodeQuality = taskManagementService.getTaskYearlyCodeQuality(startYear, endYear);
         return R.ok(yearlyCodeQuality);
+    }
+
+    /**
+     * 活跃用户分布
+     */
+    @Operation(summary = "获取活跃用户分布")
+    @GetMapping("/stats/active-user-distribution")
+    public R<List<ActiveUserDistributionItem>> getActiveUserDistribution(
+            @RequestParam(value = "date", required = false) String date) {
+        List<ActiveUserDistributionItem> distribution = taskManagementService.getActiveUserDistribution(date);
+        return R.ok(distribution);
+    }
+
+    /**
+     * 峰值时段分析
+     */
+    @Operation(summary = "获取峰值时段分析")
+    @GetMapping("/stats/peak-time-analysis")
+    public R<List<PeakTimeAnalysisItem>> getPeakTimeAnalysis(
+            @RequestParam(value = "date", required = true) String date) {
+        List<PeakTimeAnalysisItem> analysis = taskManagementService.getPeakTimeAnalysis(date);
+        return R.ok(analysis);
+    }
+
+    /**
+     * 在线用户数量
+     */
+    @Operation(summary = "获取在线用户数量")
+    @GetMapping("/stats/online-user-count")
+    public R<OnlineUserCountVO> getOnlineUserCount() {
+        OnlineUserCountVO count = taskManagementService.getOnlineUserCount();
+        return R.ok(count);
+    }
+
+    /**
+     * 系统负载监控
+     */
+    @Operation(summary = "获取系统负载数据")
+    @GetMapping("/stats/system-load")
+    public R<List<SystemLoadItem>> getSystemLoad(
+            @RequestParam(value = "timeRange", required = true) String timeRange) {
+        List<SystemLoadItem> systemLoad = systemLoadService.getSystemLoadByTimeRange(timeRange);
+        return R.ok(systemLoad);
     }
 }
 

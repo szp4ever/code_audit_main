@@ -137,4 +137,19 @@ public interface ITaskManagementService {
      * 获取年度代码质量统计
      */
     List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear);
+
+    /**
+     * 获取活跃用户分布
+     */
+    List<ActiveUserDistributionItem> getActiveUserDistribution(String date);
+
+    /**
+     * 获取峰值时段分析
+     */
+    List<PeakTimeAnalysisItem> getPeakTimeAnalysis(String date);
+
+    /**
+     * 获取在线用户数量
+     */
+    OnlineUserCountVO getOnlineUserCount();
 }

@@ -807,4 +807,22 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
     public List<TaskYearlyCodeQualityItem> getTaskYearlyCodeQuality(String startYear, String endYear) {
         return taskManagementMapper.selectYearlyCodeQuality(startYear, endYear);
     }
+
+    @Override
+    public List<ActiveUserDistributionItem> getActiveUserDistribution(String date) {
+        return taskManagementMapper.selectActiveUserDistribution(date);
+    }
+
+    @Override
+    public List<PeakTimeAnalysisItem> getPeakTimeAnalysis(String date) {
+        return taskManagementMapper.selectPeakTimeAnalysis(date);
+    }
+
+    @Override
+    public OnlineUserCountVO getOnlineUserCount() {
+        OnlineUserCountVO vo = new OnlineUserCountVO();
+        Integer count = taskManagementMapper.selectOnlineUserCount();
+        vo.setCount(count != null ? count : 0);
+        return vo;
+    }
 }

@@ -125,6 +125,21 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
     List<TaskYearlyCodeQualityItem> selectYearlyCodeQuality(
             @Param("startYear") String startYear,
             @Param("endYear") String endYear);
+
+    /**
+     * 活跃用户分布
+     */
+    List<ActiveUserDistributionItem> selectActiveUserDistribution(@Param("date") String date);
+
+    /**
+     * 峰值时段分析
+     */
+    List<PeakTimeAnalysisItem> selectPeakTimeAnalysis(@Param("date") String date);
+
+    /**
+     * 在线用户数量
+     */
+    Integer selectOnlineUserCount();
 }
 
 

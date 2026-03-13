@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.ruoyi.chat.mapper.SystemLoadMapper">
+
+    <resultMap id="SystemLoadResult" type="org.ruoyi.chat.domain.SystemLoad">
+        <id property="id" column="id"/>
+        <result property="timestamp" column="timestamp"/>
+        <result property="cpuUsage" column="cpu_usage"/>
+        <result property="memoryUsage" column="memory_usage"/>
+        <result property="gpuUsage" column="gpu_usage"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <resultMap id="SystemLoadItemResult" type="org.ruoyi.chat.domain.vo.SystemLoadItem">
+        <result property="timestamp" column="timestamp"/>
+        <result property="cpuUsage" column="cpuUsage"/>
+        <result property="memoryUsage" column="memoryUsage"/>
+        <result property="gpuUsage" column="gpuUsage"/>
+    </resultMap>
+
+    <!-- 查询系统负载数据 -->
+    <select id="selectSystemLoadByTimeRange" parameterType="String" resultMap="SystemLoadItemResult">
+        SELECT
+            DATE_FORMAT(timestamp, '%Y-%m-%dT%H:%i:00Z') AS timestamp,
+            cpu_usage AS cpuUsage,
+            memory_usage AS memoryUsage,
+            gpu_usage AS gpuUsage
+        FROM
+            system_load
+        WHERE
+            timestamp >= CASE
+                WHEN #{timeRange} = '1h' THEN DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                WHEN #{timeRange} = '24h' THEN DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                ELSE DATE_SUB(NOW(), INTERVAL 1 HOUR)
+            END
+        ORDER BY
+            timestamp ASC
+    </select>
+
+    <!-- 插入系统负载数据 -->
+    <insert id="insertSystemLoad" parameterType="org.ruoyi.chat.domain.SystemLoad" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO system_load
+        (timestamp, cpu_usage, memory_usage, gpu_usage, create_time)
+        VALUES
+        (#{timestamp}, #{cpuUsage}, #{memoryUsage}, #{gpuUsage}, NOW())
+    </insert>
+
+</mapper>
