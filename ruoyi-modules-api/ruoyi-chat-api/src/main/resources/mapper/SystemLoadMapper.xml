@@ -28,7 +28,7 @@
             memory_usage AS memoryUsage,
             gpu_usage AS gpuUsage
         FROM
-            system_load
+            sys_load
         WHERE
             timestamp >= CASE
                 WHEN #{timeRange} = '1h' THEN DATE_SUB(NOW(), INTERVAL 1 HOUR)
@@ -41,7 +41,7 @@
 
     <!-- 插入系统负载数据 -->
     <insert id="insertSystemLoad" parameterType="org.ruoyi.chat.domain.SystemLoad" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO system_load
+        INSERT INTO sys_load
         (timestamp, cpu_usage, memory_usage, gpu_usage, create_time)
         VALUES
         (#{timestamp}, #{cpuUsage}, #{memoryUsage}, #{gpuUsage}, NOW())

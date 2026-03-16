@@ -305,4 +305,31 @@
         WHERE
         DATE(login_date) = CURRENT_DATE
     </select>
+
+    <!-- 漏洞修复效率统计 -->
+    <select id="selectVulnerabilityFixEfficiency" resultType="org.ruoyi.chat.domain.vo.VulnerabilityFixEfficiencyItem">
+        WITH RECURSIVE dates AS (
+            SELECT DATE(#{startDate}) AS date
+            UNION ALL
+            SELECT DATE_ADD(date, INTERVAL 1 DAY) AS date
+            FROM dates
+            <![CDATA[
+                WHERE date < DATE(#{endDate})
+            ]]>
+        )
+        SELECT
+            d.date,
+            COALESCE(SUM(CASE WHEN ti.severity = '严重' OR ti.severity = 'critical' THEN 1 ELSE 0 END), 0) AS critical,
+            COALESCE(SUM(CASE WHEN ti.severity = '高' OR ti.severity = 'high' THEN 1 ELSE 0 END), 0) AS high,
+            COALESCE(SUM(CASE WHEN ti.severity = '中' OR ti.severity = 'medium' THEN 1 ELSE 0 END), 0) AS medium,
+            COALESCE(SUM(CASE WHEN ti.severity = '低' OR ti.severity = 'low' THEN 1 ELSE 0 END), 0) AS low
+        FROM
+            dates d
+        LEFT JOIN
+            task_management_issue ti ON DATE(ti.create_time) = d.date AND ti.del_flag = '0'
+        GROUP BY
+            d.date
+        ORDER BY
+            d.date ASC
+    </select>
 </mapper>

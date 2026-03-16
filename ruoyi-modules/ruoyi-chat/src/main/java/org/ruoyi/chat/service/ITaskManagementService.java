@@ -152,4 +152,9 @@ public interface ITaskManagementService {
      * 获取在线用户数量
      */
     OnlineUserCountVO getOnlineUserCount();
+
+    /**
+     * 获取漏洞修复效率统计
+     */
+    List<VulnerabilityFixEfficiencyItem> getVulnerabilityFixEfficiency(String startDate, String endDate);
 }

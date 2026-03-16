@@ -220,6 +220,18 @@ public class TaskManagementStatsController extends BaseController {
         List<SystemLoadItem> systemLoad = systemLoadService.getSystemLoadByTimeRange(timeRange);
         return R.ok(systemLoad);
     }
+
+    /**
+     * 漏洞修复效率统计
+     */
+    @Operation(summary = "获取漏洞修复效率统计")
+    @GetMapping("/stats/vulnerability-fix-efficiency")
+    public R<List<VulnerabilityFixEfficiencyItem>> getVulnerabilityFixEfficiency(
+            @RequestParam(value = "startDate", required = true) String startDate,
+            @RequestParam(value = "endDate", required = true) String endDate) {
+        List<VulnerabilityFixEfficiencyItem> efficiency = taskManagementService.getVulnerabilityFixEfficiency(startDate, endDate);
+        return R.ok(efficiency);
+    }
 }
 
 

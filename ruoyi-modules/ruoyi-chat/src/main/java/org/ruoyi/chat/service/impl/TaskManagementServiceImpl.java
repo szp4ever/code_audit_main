@@ -825,4 +825,13 @@ public class TaskManagementServiceImpl implements ITaskManagementService {
         vo.setCount(count != null ? count : 0);
         return vo;
     }
+
+    @Override
+    public List<VulnerabilityFixEfficiencyItem> getVulnerabilityFixEfficiency(String startDate, String endDate) {
+        // 验证日期参数
+        if (startDate == null || startDate.isEmpty() || endDate == null || endDate.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return taskManagementMapper.selectVulnerabilityFixEfficiency(startDate, endDate);
+    }
 }

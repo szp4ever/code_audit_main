@@ -140,6 +140,13 @@ public interface TaskManagementMapper extends BaseMapper<TaskManagement> {
      * 在线用户数量
      */
     Integer selectOnlineUserCount();
+
+    /**
+     * 漏洞修复效率统计
+     */
+    List<VulnerabilityFixEfficiencyItem> selectVulnerabilityFixEfficiency(
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 }
 
 
