@@ -2,7 +2,6 @@ package org.ruoyi.system.domain.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.system.domain.SysUser;
 
@@ -18,7 +17,6 @@ import java.util.List;
  * @author Michelle.Chung
  */
 @Data
-@AutoMapper(target = SysUser.class)
 public class SysUserVo implements Serializable {
 
     @Serial

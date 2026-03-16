@@ -2,7 +2,6 @@ package org.ruoyi.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.common.excel.annotation.ExcelDictFormat;
 import org.ruoyi.common.excel.convert.ExcelDictConvert;
@@ -19,7 +18,6 @@ import java.io.Serializable;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = McpInfo.class)
 public class McpInfoVo implements Serializable {
     private Integer mcpId;
 

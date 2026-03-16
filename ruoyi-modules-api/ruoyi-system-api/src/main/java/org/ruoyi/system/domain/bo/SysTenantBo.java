@@ -19,8 +19,8 @@ import java.util.Date;
  */
 
 @Data
+@AutoMapper(target = SysTenant.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysTenant.class, reverseConvertGenerate = false)
 public class SysTenantBo extends BaseEntity {
 
     /**

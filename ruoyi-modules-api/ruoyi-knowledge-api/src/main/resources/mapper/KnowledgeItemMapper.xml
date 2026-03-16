@@ -2,52 +2,34 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.ruoyi.mapper.KnowledgeItemMapper">
-    <select id="selectByItemUuid" resultType="org.ruoyi.domain.KnowledgeItem">
+<mapper namespace="org.ruoyi.knowledge.curation.mapper.KnowledgeItemMapper">
+    <select id="selectByItemUuid" resultType="org.ruoyi.knowledge.curation.domain.KnowledgeItem">
         SELECT *
         FROM knowledge_item
         WHERE item_uuid = #{itemUuid}
         LIMIT 1
     </select>
 
+    <!-- 统计知识库下已发布/草稿状态的条目数（不含软删除），基于 knowledge_item_fragment N:M 中间表 -->
     <update id="updateKnowledgeItemCount">
         UPDATE knowledge_info
         SET item_count = (
             SELECT COUNT(*)
             FROM knowledge_item ki
-            WHERE ki.kid = #{kid} 
+            WHERE ki.kid = #{kid}
             AND ki.del_flag = '0'
-            AND NOT EXISTS (
-                SELECT 1 FROM knowledge_fragment f 
-                INNER JOIN knowledge_attach_process p ON f.doc_id = p.doc_id 
-                WHERE f.item_uuid = ki.item_uuid 
-                AND f.del_flag = '0' 
-                AND p.current_status != 'COMPLETED' 
-                AND JSON_SEARCH(p.status_data, 'one', ki.item_uuid, NULL, '$.llmCreatedItems[*].itemUuid') IS NOT NULL
-            )
         )
         WHERE kid = #{kid}
     </update>
 
+    <!-- 统计知识库下有效片段数（不含软删除），基于 knowledge_item_fragment N:M 中间表 -->
     <update id="updateKnowledgeFragmentCount">
         UPDATE knowledge_info
         SET fragment_count = (
             SELECT COUNT(*)
             FROM knowledge_fragment kf
-            WHERE kf.kid = #{kid} 
+            WHERE kf.kid = #{kid}
             AND kf.del_flag = '0'
-            AND (
-                kf.item_uuid IS NULL 
-                OR NOT EXISTS (
-                    SELECT 1 FROM knowledge_item ki
-                    INNER JOIN knowledge_fragment f ON f.item_uuid = ki.item_uuid
-                    INNER JOIN knowledge_attach_process p ON f.doc_id = p.doc_id 
-                    WHERE ki.item_uuid = kf.item_uuid
-                    AND f.del_flag = '0' 
-                    AND p.current_status != 'COMPLETED' 
-                    AND JSON_SEARCH(p.status_data, 'one', ki.item_uuid, NULL, '$.llmCreatedItems[*].itemUuid') IS NOT NULL
-                )
-            )
         )
         WHERE kid = #{kid}
     </update>

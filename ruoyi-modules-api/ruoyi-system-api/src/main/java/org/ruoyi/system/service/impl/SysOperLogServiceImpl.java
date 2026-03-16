@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ruoyi.system.domain.vo.UserOperationHeatmapItem;
-import org.ruoyi.common.core.utils.MapstructUtils;
+import org.ruoyi.system.convert.SysOperLogConvert;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.core.utils.ip.AddressUtils;
 import org.ruoyi.common.log.event.OperLogEvent;
@@ -36,6 +36,7 @@ import java.util.*;
 public class SysOperLogServiceImpl implements ISysOperLogService {
 
     private final SysOperLogMapper baseMapper;
+    private final SysOperLogConvert operLogConvert;
 
     /**
      * 操作日志记录
@@ -46,7 +47,7 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
     @EventListener
     @Override
     public void recordOper(OperLogEvent operLogEvent) {
-        SysOperLogBo operLog = MapstructUtils.convert(operLogEvent, SysOperLogBo.class);
+        SysOperLogBo operLog = operLogConvert.toBo(operLogEvent);
         // 远程查询操作地点
         operLog.setOperLocation(AddressUtils.getRealAddressByIP(operLog.getOperIp()));
         insertOperlog(operLog);
@@ -97,7 +98,7 @@ public class SysOperLogServiceImpl implements ISysOperLogService {
      */
     @Override
     public void insertOperlog(SysOperLogBo bo) {
-        SysOperLog operLog = MapstructUtils.convert(bo, SysOperLog.class);
+        SysOperLog operLog = operLogConvert.toEntity(bo);
         operLog.setOperTime(new Date());
         baseMapper.insert(operLog);
     }

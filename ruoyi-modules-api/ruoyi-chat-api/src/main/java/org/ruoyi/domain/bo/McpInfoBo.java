@@ -1,6 +1,5 @@
 package org.ruoyi.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.ruoyi.domain.McpInfo;
@@ -15,7 +14,6 @@ import java.io.Serializable;
  */
 @Data
 
-@AutoMapper(target = McpInfo.class, reverseConvertGenerate = false)
 public class McpInfoBo implements Serializable {
 
     /**

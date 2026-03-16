@@ -1,7 +1,6 @@
 package org.ruoyi.system.domain.bo;
 
 import io.github.linpeilie.annotations.AutoMapper;
-import io.github.linpeilie.annotations.AutoMappers;
 import lombok.Data;
 import org.ruoyi.common.log.event.OperLogEvent;
 import org.ruoyi.system.domain.SysOperLog;
@@ -17,11 +16,9 @@ import java.util.Map;
  * @date 2023-02-07
  */
 
+
+@AutoMapper(target = SysOperLog.class, reverseConvertGenerate = false)
 @Data
-@AutoMappers({
-        @AutoMapper(target = SysOperLog.class, reverseConvertGenerate = false),
-        @AutoMapper(target = OperLogEvent.class)
-})
 public class SysOperLogBo {
 
     /**

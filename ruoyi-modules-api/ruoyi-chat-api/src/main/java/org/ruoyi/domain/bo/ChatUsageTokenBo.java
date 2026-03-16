@@ -1,6 +1,5 @@
 package org.ruoyi.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -18,7 +17,6 @@ import org.ruoyi.domain.ChatUsageToken;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = ChatUsageToken.class, reverseConvertGenerate = false)
 public class ChatUsageTokenBo extends BaseEntity {
 
     /**

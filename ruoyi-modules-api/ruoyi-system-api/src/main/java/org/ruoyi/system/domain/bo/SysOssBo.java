@@ -12,8 +12,8 @@ import org.ruoyi.system.domain.SysOss;
  * @author Lion Li
  */
 @Data
+@AutoMapper(target = SysOss.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysOss.class, reverseConvertGenerate = false)
 public class SysOssBo extends BaseEntity {
 
     /**

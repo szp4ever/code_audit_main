@@ -1,5 +1,6 @@
 package org.ruoyi.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
  * @author ageerle
  * @date 2025-04-08
  */
+@AutoMapper(target = org.ruoyi.domain.vo.ChatPayOrderVo.class)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("chat_pay_order")

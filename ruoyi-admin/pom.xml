@@ -18,6 +18,12 @@
 
     <dependencies>
 
+        <!-- 显式依赖 common-core，避免 DevTools RestartClassLoader 下 LoginBody 等类 ClassNotFoundException -->
+        <dependency>
+            <groupId>org.ruoyi</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+
         <!-- Mysql驱动包 -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -72,13 +78,15 @@
             <artifactId>ruoyi-aihuman</artifactId>
         </dependency>
 
-        <!-- Spring Boot DevTools - 热部署 -->
+        <!-- Spring Boot DevTools - 热部署（临时禁用，解决 workflow AOP 冲突） -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        -->
 
     </dependencies>
 

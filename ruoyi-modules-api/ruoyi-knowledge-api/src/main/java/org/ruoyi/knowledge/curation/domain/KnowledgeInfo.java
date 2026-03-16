@@ -1,0 +1,136 @@
+package org.ruoyi.knowledge.curation.domain;
+
+import io.github.linpeilie.annotations.AutoMapper;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.ruoyi.core.domain.BaseEntity;
+
+import java.io.Serial;
+
+/**
+ * 知识库对象 knowledge_info
+ *
+ * @author ageerle
+ * @date 2025-04-08
+ */
+@AutoMapper(target = org.ruoyi.knowledge.curation.domain.vo.KnowledgeInfoVo.class)
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("knowledge_info")
+public class KnowledgeInfo extends BaseEntity {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    /**
+     *
+     */
+    @TableId(value = "id")
+    private Long id;
+
+    /**
+     * 知识库ID
+     */
+    private String kid;
+
+    /**
+     * 用户ID
+     */
+    private Long uid;
+
+    /**
+     * 知识库名称
+     */
+    private String kname;
+
+    /**
+     * 是否公开知识库（0 否 1是）
+     */
+    private Integer share;
+
+    /**
+     * 描述
+     */
+    private String description;
+
+    /**
+     * 知识库分类（用途类型，如：漏洞修复、编码规范、安全标准等）
+     */
+    private String category;
+
+    /**
+     * 占用字节数（所有知识条目内容的总大小）
+     */
+    private Long dataSize;
+
+    /**
+     * 知识条目数量
+     */
+    private Integer itemCount;
+
+    /**
+     * 知识片段数量
+     */
+    private Integer fragmentCount;
+
+    /**
+     * 文档数量（附件数，实时计算，非数据库字段）
+     */
+    @TableField(exist = false)
+    private Integer attachCount;
+
+    /**
+     * 知识分隔符
+     */
+    private String knowledgeSeparator;
+
+    /**
+     * 提问分隔符
+     */
+    private String questionSeparator;
+
+    /**
+     * 重叠字符数
+     */
+    private Long overlapChar;
+
+    /**
+     * 知识库中检索的条数
+     */
+    private Long retrieveLimit;
+
+    /**
+     * 文本块大小
+     */
+    private Long textBlockSize;
+
+    /**
+     * 向量库模型名称
+     */
+    private String vectorModelName;
+
+    /**
+     * 向量化模型id
+     */
+    private Long embeddingModelId;
+
+    /**
+     * 向量化模型名称
+     */
+    private String embeddingModelName;
+
+    /**
+     * 系统提示词
+     */
+    private String systemPrompt;
+
+    /**
+     * 备注
+     */
+    private String remark;
+
+
+}

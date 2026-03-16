@@ -1,5 +1,6 @@
 package org.ruoyi.system.domain;
 
+import io.github.linpeilie.annotations.AutoMapper;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,6 +16,7 @@ import java.util.Date;
  * @author Lion Li
  */
 
+@AutoMapper(target = org.ruoyi.system.domain.vo.SysUserVo.class)
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

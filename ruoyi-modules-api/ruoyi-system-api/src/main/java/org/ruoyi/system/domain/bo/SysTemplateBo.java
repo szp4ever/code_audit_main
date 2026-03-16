@@ -4,19 +4,19 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.github.linpeilie.annotations.AutoMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.core.domain.BaseEntity;
 import org.ruoyi.system.domain.SysTemplate;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Data
+@AutoMapper(target = SysTemplate.class)
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "模板配置业务对象")
-@AutoMapper(target = SysTemplate.class, reverseConvertGenerate = false)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class SysTemplateBo extends BaseEntity {
 

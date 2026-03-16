@@ -2,7 +2,6 @@ package org.ruoyi.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.domain.ChatPayOrder;
 
@@ -19,7 +18,6 @@ import java.math.BigDecimal;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = ChatPayOrder.class)
 public class ChatPayOrderVo implements Serializable {
 
     @Serial

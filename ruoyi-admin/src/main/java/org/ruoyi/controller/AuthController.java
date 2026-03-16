@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.ruoyi.common.core.constant.Constants;
 import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.core.domain.model.*;
-import org.ruoyi.common.core.utils.MapstructUtils;
 import org.ruoyi.common.core.utils.StreamUtils;
 import org.ruoyi.common.core.utils.StringUtils;
 import org.ruoyi.common.satoken.utils.LoginHelper;
@@ -17,6 +16,7 @@ import org.ruoyi.system.domain.vo.LoginTenantVo;
 import org.ruoyi.system.domain.vo.LoginVo;
 import org.ruoyi.system.domain.vo.SysTenantVo;
 import org.ruoyi.system.domain.vo.TenantListVo;
+import org.ruoyi.system.convert.SysTenantConvert;
 import org.ruoyi.system.service.ISysTenantService;
 import org.ruoyi.system.service.SysLoginService;
 import org.ruoyi.system.service.SysRegisterService;
@@ -41,6 +41,7 @@ public class AuthController {
     private final SysLoginService loginService;
     private final SysRegisterService registerService;
     private final ISysTenantService tenantService;
+    private final SysTenantConvert sysTenantConvert;
 
     /**
      * 登录方法
@@ -144,7 +145,7 @@ public class AuthController {
     @GetMapping("/tenant/list")
     public R<LoginTenantVo> tenantList(HttpServletRequest request) throws Exception {
         List<SysTenantVo> tenantList = tenantService.queryList(new SysTenantBo());
-        List<TenantListVo> voList = MapstructUtils.convert(tenantList, TenantListVo.class);
+        List<TenantListVo> voList = tenantList.stream().map(sysTenantConvert::toListVo).toList();
         // 获取域名
         String host = new URL(request.getRequestURL().toString()).getHost();
         // 根据域名进行筛选

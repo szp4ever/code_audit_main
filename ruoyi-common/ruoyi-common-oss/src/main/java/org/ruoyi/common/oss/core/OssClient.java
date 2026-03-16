@@ -60,18 +60,13 @@ public class OssClient {
             } else {
                 clientConfig.setProtocol(Protocol.HTTP);
             }
-            // 配置连接池参数，解决 "Timeout waiting for connection from pool" 问题
-            // 最大连接数：默认50，增加到100以支持更多并发请求
-            clientConfig.setMaxConnections(100);
-            // 连接超时时间（毫秒）：建立连接的最大等待时间，默认50秒，增加到60秒
+            // 合并配置：main 的稳定性 + feature 的吞吐与超时
+            clientConfig.setMaxConnections(200);
             clientConfig.setConnectionTimeout(60000);
-            // Socket读取超时时间（毫秒）：从服务器读取数据的最大等待时间，默认50秒，增加到60秒
             clientConfig.setSocketTimeout(60000);
-            // 连接TTL（毫秒）：连接的最大生存时间，默认无限制，设置为5分钟避免连接长时间占用
+            clientConfig.setRequestTimeout(120_000);
             clientConfig.setConnectionTTL(300000);
-            // 请求超时重试次数：默认3次，增加到5次以提高容错性
             clientConfig.setMaxErrorRetry(5);
-            // 使用TCP Keep-Alive保持连接活跃
             clientConfig.setUseTcpKeepAlive(true);
             AmazonS3ClientBuilder build = AmazonS3Client.builder()
                     .withEndpointConfiguration(endpointConfig)
@@ -180,13 +175,79 @@ public class OssClient {
 
     /**
      * 获取文件元数据
+     * 使用 HEAD 请求（getObjectMetadata），不下载文件内容
      *
      * @param path 完整文件路径
      */
     public ObjectMetadata getObjectMetadata(String path) {
         path = path.replace(getUrl() + "/", "");
-        S3Object object = client.getObject(properties.getBucketName(), path);
-        return object.getObjectMetadata();
+        return client.getObjectMetadata(properties.getBucketName(), path);
+    }
+
+    /**
+     * 批量获取指定前缀下所有对象的大小（一次 LIST 请求）
+     * 返回 Map<objectKey, sizeBytes>
+     *
+     * @param prefix 对象键前缀（如 "2026/03/"），传 null 或空串则列出整个桶
+     */
+    public java.util.Map<String, Long> listObjectSizes(String prefix) {
+        java.util.Map<String, Long> result = new java.util.HashMap<>();
+        com.amazonaws.services.s3.model.ListObjectsV2Request req =
+            new com.amazonaws.services.s3.model.ListObjectsV2Request()
+                .withBucketName(properties.getBucketName())
+                .withMaxKeys(1000);
+        if (prefix != null && !prefix.isEmpty()) {
+            req.withPrefix(prefix);
+        }
+        com.amazonaws.services.s3.model.ListObjectsV2Result listing;
+        do {
+            listing = client.listObjectsV2(req);
+            for (com.amazonaws.services.s3.model.S3ObjectSummary summary : listing.getObjectSummaries()) {
+                result.put(summary.getKey(), summary.getSize());
+            }
+            req.setContinuationToken(listing.getNextContinuationToken());
+        } while (listing.isTruncated());
+        return result;
+    }
+
+    /**
+     * 批量获取指定对象键列表的大小
+     * 先用 listObjects 拿到桶内所有对象大小，再按 keys 过滤
+     * 适用于一次性查询多个文件大小的场景（比逐个 HEAD 快得多）
+     *
+     * @param objectKeys 需要查询的对象键列表
+     */
+    public java.util.Map<String, Long> batchGetObjectSizes(java.util.Collection<String> objectKeys) {
+        if (objectKeys == null || objectKeys.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        // 提取公共前缀以缩小 LIST 范围
+        String commonPrefix = findCommonPrefix(objectKeys);
+        java.util.Map<String, Long> allSizes = listObjectSizes(commonPrefix);
+        java.util.Set<String> keySet = new java.util.HashSet<>(objectKeys);
+        java.util.Map<String, Long> result = new java.util.HashMap<>();
+        for (java.util.Map.Entry<String, Long> entry : allSizes.entrySet()) {
+            if (keySet.contains(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
+    }
+
+    private String findCommonPrefix(java.util.Collection<String> keys) {
+        if (keys.isEmpty()) return "";
+        String first = keys.iterator().next();
+        String prefix = first;
+        for (String key : keys) {
+            while (!key.startsWith(prefix)) {
+                int lastSlash = prefix.lastIndexOf('/');
+                if (lastSlash <= 0) return "";
+                prefix = prefix.substring(0, lastSlash + 1);
+            }
+        }
+        // 只保留到最后一个 / 的部分
+        int lastSlash = prefix.lastIndexOf('/');
+        return lastSlash > 0 ? prefix.substring(0, lastSlash + 1) : "";
     }
 
     public InputStream getObjectContent(String path) {

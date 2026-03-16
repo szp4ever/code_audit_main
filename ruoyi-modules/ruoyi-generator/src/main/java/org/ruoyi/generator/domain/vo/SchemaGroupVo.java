@@ -1,8 +1,6 @@
 package org.ruoyi.generator.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.ruoyi.generator.domain.SchemaGroup;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,7 +12,6 @@ import java.util.Date;
  * @date 2024-01-01
  */
 @Data
-@AutoMapper(target = SchemaGroup.class)
 public class SchemaGroupVo implements Serializable {
 
     /**

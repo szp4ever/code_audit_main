@@ -19,8 +19,8 @@ import org.ruoyi.system.domain.SysDept;
  */
 
 @Data
+@AutoMapper(target = SysDept.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysDept.class, reverseConvertGenerate = false)
 public class SysDeptBo extends BaseEntity {
 
     /**

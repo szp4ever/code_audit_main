@@ -2,7 +2,6 @@ package org.ruoyi.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.system.domain.ChatConfig;
 
@@ -18,7 +17,6 @@ import java.io.Serializable;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = ChatConfig.class)
 public class ChatConfigVo implements Serializable {
 
     @Serial

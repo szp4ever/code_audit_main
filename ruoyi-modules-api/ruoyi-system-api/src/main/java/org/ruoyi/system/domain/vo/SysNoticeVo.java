@@ -1,6 +1,5 @@
 package org.ruoyi.system.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.system.domain.SysNotice;
 
@@ -14,7 +13,6 @@ import java.io.Serializable;
  * @author Michelle.Chung
  */
 @Data
-@AutoMapper(target = SysNotice.class)
 public class SysNoticeVo implements Serializable {
 
     @Serial

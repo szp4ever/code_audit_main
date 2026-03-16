@@ -14,9 +14,9 @@ import org.ruoyi.common.log.enums.BusinessType;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.domain.bo.KnowledgeRoleBo;
-import org.ruoyi.domain.vo.KnowledgeRoleVo;
-import org.ruoyi.service.IKnowledgeRoleService;
+import org.ruoyi.knowledge.curation.domain.bo.KnowledgeRoleBo;
+import org.ruoyi.knowledge.curation.domain.vo.KnowledgeRoleVo;
+import org.ruoyi.knowledge.curation.service.IKnowledgeRoleService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

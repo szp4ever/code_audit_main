@@ -2,7 +2,6 @@ package org.ruoyi.chat.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.chat.domain.TaskManagement;
 
@@ -19,7 +18,6 @@ import java.util.List;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = TaskManagement.class)
 public class TaskManagementVo implements Serializable {
 
     @Serial

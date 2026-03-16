@@ -9,9 +9,9 @@ import org.ruoyi.common.core.domain.R;
 import org.ruoyi.common.web.core.BaseController;
 import org.ruoyi.core.page.PageQuery;
 import org.ruoyi.core.page.TableDataInfo;
-import org.ruoyi.domain.bo.CweReferenceBo;
-import org.ruoyi.domain.vo.CweReferenceVo;
-import org.ruoyi.service.ICweReferenceService;
+import org.ruoyi.knowledge.cwe.domain.bo.CweReferenceBo;
+import org.ruoyi.knowledge.cwe.domain.vo.CweReferenceVo;
+import org.ruoyi.knowledge.cwe.service.ICweReferenceService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

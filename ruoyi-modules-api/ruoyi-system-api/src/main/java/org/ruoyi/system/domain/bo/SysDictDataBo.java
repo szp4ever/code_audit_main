@@ -18,8 +18,8 @@ import org.ruoyi.system.domain.SysDictData;
  */
 
 @Data
+@AutoMapper(target = SysDictData.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysDictData.class, reverseConvertGenerate = false)
 public class SysDictDataBo extends BaseEntity {
 
     /**

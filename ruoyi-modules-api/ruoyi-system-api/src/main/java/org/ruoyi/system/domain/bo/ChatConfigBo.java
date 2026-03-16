@@ -1,6 +1,5 @@
 package org.ruoyi.system.domain.bo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -8,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import org.ruoyi.common.core.validate.AddGroup;
 import org.ruoyi.common.core.validate.EditGroup;
 import org.ruoyi.core.domain.BaseEntity;
+import io.github.linpeilie.annotations.AutoMapper;
 import org.ruoyi.system.domain.ChatConfig;
 
 /**
@@ -17,8 +17,8 @@ import org.ruoyi.system.domain.ChatConfig;
  * @date 2025-04-08
  */
 @Data
+@AutoMapper(target = ChatConfig.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = ChatConfig.class, reverseConvertGenerate = false)
 public class ChatConfigBo extends BaseEntity {
 
     /**

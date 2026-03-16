@@ -2,7 +2,6 @@ package org.ruoyi.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.common.excel.annotation.ExcelDictFormat;
 import org.ruoyi.common.excel.convert.ExcelDictConvert;
@@ -20,7 +19,6 @@ import java.util.Date;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = SysPost.class)
 public class SysPostVo implements Serializable {
 
     @Serial

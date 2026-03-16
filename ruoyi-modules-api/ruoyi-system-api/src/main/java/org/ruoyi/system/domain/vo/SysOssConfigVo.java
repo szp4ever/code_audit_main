@@ -1,7 +1,6 @@
 package org.ruoyi.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.system.domain.SysOssConfig;
 
@@ -18,7 +17,6 @@ import java.io.Serializable;
  */
 @Data
 @ExcelIgnoreUnannotated
-@AutoMapper(target = SysOssConfig.class)
 public class SysOssConfigVo implements Serializable {
 
     @Serial

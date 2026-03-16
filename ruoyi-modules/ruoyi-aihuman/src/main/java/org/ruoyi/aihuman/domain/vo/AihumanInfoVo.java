@@ -1,6 +1,5 @@
 package org.ruoyi.aihuman.domain.vo;
 
-import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
 import org.ruoyi.aihuman.domain.AihumanInfo;
 
@@ -13,7 +12,6 @@ import java.util.Date;
  * @author QingYunAI
  */
 @Data
-@AutoMapper(target = AihumanInfo.class)
 public class AihumanInfoVo implements Serializable {
     private static final long serialVersionUID = 1L;
 

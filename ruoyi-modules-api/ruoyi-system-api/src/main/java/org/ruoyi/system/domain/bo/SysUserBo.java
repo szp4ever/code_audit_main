@@ -22,8 +22,8 @@ import org.ruoyi.system.domain.SysUser;
 
 @Data
 @NoArgsConstructor
+@AutoMapper(target = SysUser.class)
 @EqualsAndHashCode(callSuper = true)
-@AutoMapper(target = SysUser.class, reverseConvertGenerate = false)
 public class SysUserBo extends BaseEntity {
 
     /**
